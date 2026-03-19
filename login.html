@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="shortcut icon" href="favicon.svg"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HP-POS - تسجيل الدخول</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <style>
+    /* أنيميشن متقدم */
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      margin: 0;
+      background: var(--bg-dark);
+    }
+
+    .particles {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: var(--primary);
+      opacity: 0.15;
+      animation: floatParticle linear infinite;
+    }
+
+    @keyframes floatParticle {
+      0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.15;
+      }
+      90% {
+        opacity: 0.1;
+      }
+      100% {
+        transform: translateY(-20px) scale(1.2);
+        opacity: 0;
+      }
+    }
+
+    .glow-ring {
+      position: fixed;
+      border-radius: 50%;
+      border: 1px solid rgba(124, 58, 237, 0.15);
+      animation: pulseRing 4s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes pulseRing {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.15;
+      }
+      50% {
+        transform: scale(1.05);
+        opacity: 0.25;
+      }
+    }
+
+    .login-wrap {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+    }
+
+    /* العلامة التجارية خارج البطاقة */
+    .login-header {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px var(--glow);
+      backdrop-filter: blur(10px);
+    }
+
+    .card-glow-bar {
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--primary-light));
+    }
+
+    .card-body {
+      padding: 24px 28px 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+
+    .brand-hb {
+      font-family: Impact, sans-serif;
+      font-size: 2.8rem;
+      color: var(--text-primary);
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    }
+
+    .brand-pos {
+      font-family: Impact, sans-serif;
+      font-size: 2.8rem;
+      color: var(--primary);
+      text-shadow: 0 0 24px var(--glow);
+    }
+
+    .brand-sub {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-bottom: 0;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .field-wrap {
+      display: flex;
+      align-items: center;
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      transition: all 0.2s ease;
+      overflow: hidden;
+    }
+
+    .field-wrap:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+    }
+
+    .field-icon {
+      padding: 0 12px;
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    .field-wrap input,
+    .field-wrap select {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      padding: 12px 8px 12px 0;
+      font-family: var(--font-main);
+      font-size: 0.98rem;
+      direction: rtl;
+    }
+
+    .field-wrap select option {
+      background: var(--bg-card);
+    }
+
+    .toggle-eye {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0 12px;
+      transition: color 0.2s;
+    }
+
+    .toggle-eye:hover {
+      color: var(--primary);
+    }
+
+    .remember-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .remember-row input[type=checkbox] {
+      accent-color: var(--primary);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .remember-row label {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-family: var(--font-main);
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-login::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn-login:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(124, 58, 237, 0.5);
+    }
+
+    .btn-login:active {
+      transform: translateY(0);
+    }
+
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .error-msg {
+      color: var(--danger);
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 10px;
+      min-height: 20px;
+      font-weight: 600;
+    }
+
+    .login-attempts {
+      font-size: 0.75rem;
+      color: var(--warning);
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    /* زر "نسيت الرقم السري" — متوافق مع النظام البصري */
+    .forgot-pw-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      margin-top: 10px;
+      padding: 7px 12px;
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .forgot-pw-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary-light);
+      background: rgba(124,58,237,0.06);
+    }
+
+    /* Stepper — الشيء الوحيد غير الموجود في style.css */
+    .stepper {
+      display: flex;
+      align-items: flex-start;
+      padding: 16px 24px 8px;
+    }
+    .stepper-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      flex: 1;
+      position: relative;
+    }
+    .stepper-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 13px;
+      left: -50%;
+      width: 100%;
+      height: 2px;
+      background: var(--border);
+      z-index: 0;
+      transition: background 0.3s;
+    }
+    .stepper-item.s-done:not(:last-child)::after,
+    .stepper-item.s-active:not(:last-child)::after {
+      background: var(--primary);
+    }
+    .stepper-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      border: 2px solid var(--border);
+      background: var(--bg-dark);
+      color: var(--text-secondary);
+      position: relative;
+      z-index: 1;
+      transition: all 0.22s;
+    }
+    .stepper-item.s-active .stepper-dot {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 0 10px var(--glow);
+    }
+    .stepper-item.s-done .stepper-dot {
+      border-color: var(--success);
+      background: var(--success);
+      color: #fff;
+    }
+    .stepper-label {
+      font-size: 0.67rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      transition: color 0.2s;
+    }
+    .stepper-item.s-active .stepper-label { color: var(--primary-light); }
+    .stepper-item.s-done  .stepper-label  { color: var(--success); }
+
+    /* شرائط قوة كلمة المرور */
+    .strength-bars {
+      display: flex;
+      gap: 3px;
+      margin-top: 6px;
+    }
+    .strength-bar {
+      height: 3px;
+      flex: 1;
+      border-radius: 3px;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+
+    /* مؤشر محاولات الإجابة */
+    .attempts-dots {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin: 8px 0 2px;
+    }
+    .attempt-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.25s;
+    }
+    .attempt-dot.used { background: var(--danger); }
+
+    .sidebar, .sidebar-overlay { display: none !important; }
+  </style>
+</head>
+<body>
+  <!-- خلفية متحركة -->
+  <div class="particles" id="particles"></div>
+  
+  <!-- حلقات مضيئة -->
+  <div class="glow-ring" style="width:500px;height:500px;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:0s;"></div>
+  <div class="glow-ring" style="width:700px;height:700px;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:1.3s;"></div>
+  <div class="glow-ring" style="width:900px;height:900px;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:2.6s;"></div>
+
+  <!-- بطاقة تسجيل الدخول -->
+  <div class="login-wrap">
+
+    <!-- العلامة التجارية — خارج البطاقة -->
+    <div class="login-header">
+      <div class="brand">
+        <span class="brand-hb">HB-</span><span class="brand-pos">POS</span>
+      </div>
+      <p class="brand-sub">نظام نقاط البيع الذكي</p>
+    </div>
+
+    <div class="login-card">
+      <div class="card-glow-bar"></div>
+      
+      <div class="card-body">
+
+        <!-- نموذج تسجيل الدخول -->
+        <form id="loginForm" onsubmit="event.preventDefault(); doLogin();">
+          <!-- اسم المستخدم -->
+          <div class="form-group">
+            <label class="form-label">👤 اسم المستخدم</label>
+            <div class="field-wrap">
+              <span class="field-icon">◉</span>
+              <select id="usernameSelect" required>
+                <option value="">-- اختر المستخدم --</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- كلمة المرور -->
+          <div class="form-group">
+            <label class="form-label">🔑 الرقم السري</label>
+            <div class="field-wrap">
+              <span class="field-icon">🔒</span>
+              <input type="password" 
+                     id="passwordInput" 
+                     placeholder="أدخل الرقم السري" 
+                     autocomplete="current-password"
+                     required/>
+              <button type="button" class="toggle-eye" id="toggleEye" onclick="togglePassword()">👁</button>
+            </div>
+          </div>
+
+          <!-- تذكرني -->
+          <div class="remember-row">
+            <input type="checkbox" id="rememberMe" checked/>
+            <label for="rememberMe">حفظ بيانات الدخول</label>
+          </div>
+
+          <!-- زر الدخول -->
+          <button type="submit" class="btn-login" id="loginButton">
+            <span>دخول</span>
+          </button>
+
+          <!-- نسيت الرقم السري -->
+          <button type="button" class="forgot-pw-btn" onclick="openRecovery()">
+            <i class="fa-solid fa-circle-question"></i>
+            <span>نسيت الرقم السري؟</span>
+          </button>
+
+          <!-- رسائل الخطأ -->
+          <div class="error-msg" id="errorMsg"></div>
+          <div class="login-attempts" id="attemptsMsg"></div>
+
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       مودال استرداد الرقم السري
+       CSS مستخدم: modal-overlay / modal / modal-header / modal-title /
+                   modal-close / modal-footer / input-group / input-label /
+                   input-field / select-field / alert / alert-info /
+                   alert-warning / alert-success / btn / btn-* / badge
+  ══════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="rcvOverlay">
+    <div class="modal" style="max-width:460px;">
+
+      <!-- Header -->
+      <div class="modal-header">
+        <span class="modal-title">
+          <i class="fa-solid fa-key"></i>
+          استرداد الرقم السري
+        </span>
+        <button class="modal-close" onclick="closeRecovery()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Stepper -->
+      <div class="stepper" id="rcvStepper">
+        <div class="stepper-item s-active" id="si1">
+          <div class="stepper-dot">1</div>
+          <div class="stepper-label">تحديد</div>
+        </div>
+        <div class="stepper-item" id="si2">
+          <div class="stepper-dot">2</div>
+          <div class="stepper-label">التحقق</div>
+        </div>
+        <div class="stepper-item" id="si3">
+          <div class="stepper-dot"><i class="fa-solid fa-lock-open" style="font-size:0.6rem;"></i></div>
+          <div class="stepper-label">تعيين</div>
+        </div>
+      </div>
+
+      <!-- ══ الخطوة 1: اختيار المستخدم ══ -->
+      <div id="rp1" style="padding:0 4px 4px;">
+        <div class="alert alert-info" style="margin-bottom:16px;">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>اختر اسم مستخدمك وسيرشدك النظام تلقائياً نحو طريقة الاسترداد المتاحة.</span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">
+            <i class="fa-solid fa-user"></i> اسم المستخدم
+          </label>
+          <select class="select-field" id="rcvSel"></select>
+        </div>
+        <div style="font-size:0.8rem; color:var(--danger); font-weight:700; min-height:20px; margin-bottom:8px;" id="e1"></div>
+        <div class="modal-footer" style="margin-top:0; padding-top:0; border-top:none;">
+          <button class="btn btn-primary btn-full btn-lg" onclick="rcvNext1()">
+            متابعة <i class="fa-solid fa-arrow-left"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ الخطوة 2A: بائع/مدير مساعد ══ -->
+      <div id="rp2a" style="display:none; padding:0 4px 4px;">
+        <div class="alert alert-warning">
+          <i class="fa-solid fa-lock"></i>
+          <div>
+            <strong>لا تملك صلاحية الاسترداد الذاتي</strong><br>
+            يرجى التواصل مع المدير الرئيسي لإعادة تعيين كلمة مرورك.
+          </div>
+        </div>
+        <div class="alert alert-info" style="margin-bottom:0;">
+          <i class="fa-solid fa-list-check"></i>
+          <div>
+            <strong>خطوات المدير:</strong>
+            <ol style="margin:6px 0 0; padding-right:16px; line-height:1.9;">
+              <li>فتح <strong>إدارة المستخدمين</strong></li>
+              <li>الضغط على <strong>🔑 تغيير كلمة المرور</strong> في بطاقتك</li>
+            </ol>
+          </div>
+        </div>
+        <div class="modal-footer" style="margin-top:16px; padding-top:0; border-top:none;">
+          <button class="btn btn-secondary btn-full" onclick="closeRecovery()">
+            <i class="fa-solid fa-check"></i> حسناً، فهمت
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ الخطوة 2B: سؤال الأمان ══ -->
+      <div id="rp2b" style="display:none; padding:0 4px 4px;">
+        <div class="alert alert-info" id="rcvQBox" style="margin-bottom:16px;"></div>
+        <div class="input-group">
+          <label class="input-label">
+            <i class="fa-solid fa-shield-check"></i> إجابة سؤال الأمان
+          </label>
+          <input type="text" class="input-field" id="rcvAns"
+                 placeholder="اكتب إجابتك"
+                 autocomplete="off"
+                 oninput="document.getElementById('e2b').textContent=''"/>
+        </div>
+        <div class="attempts-dots">
+          <div class="attempt-dot" id="ad1"></div>
+          <div class="attempt-dot" id="ad2"></div>
+          <div class="attempt-dot" id="ad3"></div>
+        </div>
+        <div style="text-align:center; font-size:0.72rem; color:var(--text-secondary); margin-bottom:10px;" id="adTxt">3 محاولات متاحة</div>
+        <div style="font-size:0.8rem; color:var(--danger); font-weight:700; min-height:20px; margin-bottom:8px;" id="e2b"></div>
+        <div class="modal-footer" style="margin-top:0; padding-top:0; border-top:none;">
+          <button class="btn btn-primary btn-full" onclick="rcvVerifyAns()" id="rcvAnsBtn">
+            <i class="fa-solid fa-shield-check"></i> تحقق من الإجابة
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ الخطوة 2C: رمز الطوارئ ══ -->
+      <div id="rp2c" style="display:none; padding:0 4px 4px;">
+        <div class="alert alert-warning" style="margin-bottom:16px;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <div>
+            <strong>لم يُعدَّ سؤال الأمان بعد</strong><br>
+            يمكن الاسترداد عبر رمز الطوارئ إن كان محفوظاً.
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">
+            <i class="fa-solid fa-barcode"></i> رمز الطوارئ
+          </label>
+          <input type="text" class="input-field" id="rcvCode"
+                 placeholder="XXXX-XXXX-XXXX-XXXX"
+                 dir="ltr" style="text-align:center; letter-spacing:2px; font-family:monospace,var(--font-main);"
+                 oninput="rcvFmtCode(this); document.getElementById('e2c').textContent=''"/>
+        </div>
+        <div style="font-size:0.8rem; color:var(--danger); font-weight:700; min-height:20px; margin-bottom:8px;" id="e2c"></div>
+        <div style="font-size:0.78rem; color:var(--text-secondary); text-align:center; margin-bottom:10px;">
+          لا تملك رمزاً؟ اضبطه مسبقاً من <strong>إدارة المستخدمين ← الأمان</strong>
+        </div>
+        <div class="modal-footer" style="margin-top:0; padding-top:0; border-top:none;">
+          <button class="btn btn-primary btn-full" onclick="rcvVerifyCode()">
+            <i class="fa-solid fa-unlock"></i> تحقق من الرمز
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ الخطوة 3: تعيين كلمة مرور جديدة ══ -->
+      <div id="rp3" style="display:none; padding:0 4px 4px;">
+        <div class="alert alert-success" style="margin-bottom:16px;">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>تم التحقق بنجاح — عيّن رقمك السري الجديد.</span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">
+            <i class="fa-solid fa-lock-open"></i> الرقم السري الجديد
+          </label>
+          <div style="position:relative;">
+            <input type="password" class="input-field" id="rcvNew"
+                   placeholder="أدخل الرقم السري الجديد"
+                   style="padding-left:42px;"
+                   oninput="rcvStrength(); document.getElementById('e3').textContent=''"/>
+            <button type="button" onclick="rcvEye('rcvNew',this)"
+                    style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.9rem;transition:color 0.2s;">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+          <div class="strength-bars">
+            <div class="strength-bar" id="sb1"></div>
+            <div class="strength-bar" id="sb2"></div>
+            <div class="strength-bar" id="sb3"></div>
+            <div class="strength-bar" id="sb4"></div>
+          </div>
+          <div style="font-size:0.74rem; margin-top:2px;" id="rcvStrLbl"></div>
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label class="input-label">
+            <i class="fa-solid fa-lock"></i> تأكيد الرقم السري
+          </label>
+          <input type="password" class="input-field" id="rcvConf"
+                 placeholder="أعد إدخال الرقم السري"
+                 oninput="rcvMatch(); document.getElementById('e3').textContent=''"/>
+          <div style="font-size:0.74rem; margin-top:2px;" id="rcvMatchLbl"></div>
+        </div>
+        <div style="font-size:0.8rem; color:var(--danger); font-weight:700; min-height:20px; margin:8px 0;" id="e3"></div>
+        <div class="modal-footer" style="margin-top:0; padding-top:0; border-top:none;">
+          <button class="btn btn-success btn-full btn-lg" onclick="rcvSave()" id="rcvSaveBtn">
+            <i class="fa-solid fa-floppy-disk"></i> حفظ الرقم السري الجديد
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- لوحة المفاتيح الافتراضية (لأجهزة اللمس) -->
+  <div class="vkb-overlay" id="vkbOverlay">
+    <div class="vkb-container">
+      <div class="vkb-row">
+        <button class="vkb-key" onclick="vkbPress('1')">1</button>
+        <button class="vkb-key" onclick="vkbPress('2')">2</button>
+        <button class="vkb-key" onclick="vkbPress('3')">3</button>
+        <button class="vkb-key" onclick="vkbPress('4')">4</button>
+        <button class="vkb-key" onclick="vkbPress('5')">5</button>
+        <button class="vkb-key" onclick="vkbPress('6')">6</button>
+        <button class="vkb-key" onclick="vkbPress('7')">7</button>
+        <button class="vkb-key" onclick="vkbPress('8')">8</button>
+        <button class="vkb-key" onclick="vkbPress('9')">9</button>
+        <button class="vkb-key" onclick="vkbPress('0')">0</button>
+        <button class="vkb-key delete" onclick="vkbPress('⌫')">⌫</button>
+      </div>
+      <div class="vkb-row">
+        <button class="vkb-key" onclick="vkbPress('ض')">ض</button>
+        <button class="vkb-key" onclick="vkbPress('ص')">ص</button>
+        <button class="vkb-key" onclick="vkbPress('ث')">ث</button>
+        <button class="vkb-key" onclick="vkbPress('ق')">ق</button>
+        <button class="vkb-key" onclick="vkbPress('ف')">ف</button>
+        <button class="vkb-key" onclick="vkbPress('غ')">غ</button>
+        <button class="vkb-key" onclick="vkbPress('ع')">ع</button>
+        <button class="vkb-key" onclick="vkbPress('ه')">ه</button>
+        <button class="vkb-key" onclick="vkbPress('خ')">خ</button>
+        <button class="vkb-key" onclick="vkbPress('ح')">ح</button>
+        <button class="vkb-key" onclick="vkbPress('ج')">ج</button>
+      </div>
+      <div class="vkb-row">
+        <button class="vkb-key" onclick="vkbPress('ش')">ش</button>
+        <button class="vkb-key" onclick="vkbPress('س')">س</button>
+        <button class="vkb-key" onclick="vkbPress('ي')">ي</button>
+        <button class="vkb-key" onclick="vkbPress('ب')">ب</button>
+        <button class="vkb-key" onclick="vkbPress('ل')">ل</button>
+        <button class="vkb-key" onclick="vkbPress('ا')">ا</button>
+        <button class="vkb-key" onclick="vkbPress('ت')">ت</button>
+        <button class="vkb-key" onclick="vkbPress('ن')">ن</button>
+        <button class="vkb-key" onclick="vkbPress('م')">م</button>
+        <button class="vkb-key" onclick="vkbPress('ك')">ك</button>
+        <button class="vkb-key" onclick="vkbPress('ط')">ط</button>
+      </div>
+      <div class="vkb-row">
+        <button class="vkb-key" onclick="vkbPress('A')">A</button>
+        <button class="vkb-key" onclick="vkbPress('B')">B</button>
+        <button class="vkb-key" onclick="vkbPress('C')">C</button>
+        <button class="vkb-key" onclick="vkbPress('D')">D</button>
+        <button class="vkb-key" onclick="vkbPress('E')">E</button>
+        <button class="vkb-key" onclick="vkbPress('F')">F</button>
+        <button class="vkb-key" onclick="vkbPress('G')">G</button>
+        <button class="vkb-key" onclick="vkbPress('H')">H</button>
+        <button class="vkb-key space wide" onclick="vkbPress(' ')">مسافة</button>
+        <button class="vkb-key enter-key" onclick="doLogin()" style="background:var(--primary);color:#fff;font-weight:800;min-width:70px;">دخول ↵</button>
+        <button class="vkb-key close" onclick="vkbClose()">✖ إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // ══════════════════════════════════════════════════════════════
+    //  نظام تسجيل الدخول المحسّن
+    // ══════════════════════════════════════════════════════════════
+    
+    // ثوابت الأمان
+    const MAX_ATTEMPTS = 5;
+    const LOCKOUT_TIME = 5 * 60 * 1000; // 5 دقائق
+    const ATTEMPTS_KEY = 'posdz_login_attempts_v2';
+
+    // متغيرات الحالة
+    let lockTimer = null;
+    let loginAttempts = {
+      count: 0,
+      lockedUntil: 0
+    };
+
+    // ══════════════════════════════════════════════════════════════
+    //  تهيئة الصفحة
+    // ══════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', async () => {
+      // إنشاء الجسيمات المتحركة
+      createParticles();
+      
+      // فتح قاعدة البيانات
+      await window.dbManager.open();
+      
+      // تطبيق الثيم
+      if (window.themeManager) {
+        await window.themeManager.apply();
+      }
+      
+      // تحميل المستخدمين
+      await loadUsers();
+      
+      // استعادة آخر مستخدم
+      const savedUser = localStorage.getItem('posdz_last_user');
+      if (savedUser) {
+        document.getElementById('usernameSelect').value = savedUser;
+      }
+      
+      // التحقق من وجود إقفال سابق
+      checkLockStatus();
+      
+      // تهيئة لوحة المفاتيح الافتراضية
+      initVirtualKeyboard();
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    //  إنشاء الجسيمات المتحركة
+    // ══════════════════════════════════════════════════════════════
+    function createParticles() {
+      const container = document.getElementById('particles');
+      const colors = ['var(--primary)', 'var(--secondary)', 'var(--primary-light)'];
+      
+      for (let i = 0; i < 25; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        const size = Math.random() * 10 + 3;
+        const duration = Math.random() * 12 + 8;
+        const delay = Math.random() * 8;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        
+        particle.style.cssText = `
+          width: ${size}px;
+          height: ${size}px;
+          left: ${Math.random() * 100}%;
+          animation-duration: ${duration}s;
+          animation-delay: ${delay}s;
+          background: ${color};
+        `;
+        
+        container.appendChild(particle);
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  إدارة محاولات الدخول
+    // ══════════════════════════════════════════════════════════════
+    function loadAttempts() {
+      try {
+        const saved = localStorage.getItem(ATTEMPTS_KEY);
+        if (saved) {
+          loginAttempts = JSON.parse(saved);
+        }
+      } catch (e) {
+        loginAttempts = { count: 0, lockedUntil: 0 };
+      }
+    }
+
+    function saveAttempts() {
+      try {
+        localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(loginAttempts));
+      } catch (e) {
+        console.warn('فشل في حفظ محاولات الدخول');
+      }
+    }
+
+    function checkLockStatus() {
+      loadAttempts();
+      
+      const now = Date.now();
+      const errorMsg = document.getElementById('errorMsg');
+      const attemptsMsg = document.getElementById('attemptsMsg');
+      const loginBtn = document.getElementById('loginButton');
+      const passwordInput = document.getElementById('passwordInput');
+      
+      if (loginAttempts.lockedUntil && now < loginAttempts.lockedUntil) {
+        // الحساب مقفل
+        const remaining = Math.ceil((loginAttempts.lockedUntil - now) / 1000);
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        
+        errorMsg.textContent = `🔒 الحساب مقفل مؤقتاً`;
+        attemptsMsg.textContent = `الرجاء الانتظار ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        loginBtn.disabled = true;
+        passwordInput.disabled = true;
+        
+        // بدء العد التنازلي
+        startLockCountdown();
+      } else {
+        // إعادة تعيين إذا انتهى وقت الإقفال
+        if (loginAttempts.lockedUntil) {
+          resetAttempts();
+        }
+        
+        const remaining = MAX_ATTEMPTS - loginAttempts.count;
+        if (remaining < MAX_ATTEMPTS) {
+          attemptsMsg.textContent = `❌ ${remaining} محاولة متبقية`;
+        }
+      }
+    }
+
+    function startLockCountdown() {
+      if (lockTimer) clearInterval(lockTimer);
+      
+      lockTimer = setInterval(() => {
+        const now = Date.now();
+        const errorMsg = document.getElementById('errorMsg');
+        const attemptsMsg = document.getElementById('attemptsMsg');
+        const loginBtn = document.getElementById('loginButton');
+        const passwordInput = document.getElementById('passwordInput');
+        
+        if (!loginAttempts.lockedUntil || now >= loginAttempts.lockedUntil) {
+          // انتهى الإقفال
+          clearInterval(lockTimer);
+          resetAttempts();
+          errorMsg.textContent = '';
+          attemptsMsg.textContent = '';
+          loginBtn.disabled = false;
+          passwordInput.disabled = false;
+          return;
+        }
+        
+        const remaining = Math.ceil((loginAttempts.lockedUntil - now) / 1000);
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        
+        attemptsMsg.textContent = `⏳ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }, 1000);
+    }
+
+    function recordFailedAttempt() {
+      loginAttempts.count++;
+      
+      if (loginAttempts.count >= MAX_ATTEMPTS) {
+        loginAttempts.lockedUntil = Date.now() + LOCKOUT_TIME;
+        saveAttempts();
+        checkLockStatus();
+      } else {
+        saveAttempts();
+      }
+      
+      const remaining = MAX_ATTEMPTS - loginAttempts.count;
+      document.getElementById('attemptsMsg').textContent = `❌ ${remaining} محاولة متبقية`;
+    }
+
+    function resetAttempts() {
+      loginAttempts = { count: 0, lockedUntil: 0 };
+      saveAttempts();
+      document.getElementById('attemptsMsg').textContent = '';
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  تحميل المستخدمين
+    // ══════════════════════════════════════════════════════════════
+    async function loadUsers() {
+      try {
+        const users = await window.dbManager.getAll('users');
+        const select = document.getElementById('usernameSelect');
+        
+        select.innerHTML = '<option value="">-- اختر المستخدم --</option>';
+        
+        users.sort((a, b) => {
+          if (a.role === 'admin') return -1;
+          if (b.role === 'admin') return 1;
+          return a.username.localeCompare(b.username);
+        });
+        
+        users.forEach(user => {
+          const option = document.createElement('option');
+          option.value = user.username;
+          
+          // إضافة أيقونة حسب الصلاحية
+          const roleIcon = user.role === 'admin' ? ' 👑' : 
+                          user.role === 'manager' ? ' 🛡️' : ' 👤';
+          
+          option.textContent = user.username + roleIcon;
+          select.appendChild(option);
+        });
+        
+      } catch (e) {
+        console.error('فشل في تحميل المستخدمين:', e);
+        document.getElementById('errorMsg').textContent = '⚠️ خطأ في تحميل المستخدمين';
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  تسجيل الدخول
+    // ══════════════════════════════════════════════════════════════
+    async function doLogin() {
+      const username = document.getElementById('usernameSelect').value;
+      const password = document.getElementById('passwordInput').value;
+      const errorMsg = document.getElementById('errorMsg');
+      const loginBtn = document.getElementById('loginButton');
+      
+      // التحقق من المدخلات
+      if (!username) {
+        errorMsg.textContent = '⚠️ يرجى اختيار المستخدم';
+        return;
+      }
+      
+      if (!password) {
+        errorMsg.textContent = '⚠️ يرجى إدخال الرقم السري';
+        return;
+      }
+      
+      // التحقق من الإقفال
+      if (loginAttempts.lockedUntil && Date.now() < loginAttempts.lockedUntil) {
+        errorMsg.textContent = '🔒 الحساب مقفل مؤقتاً';
+        return;
+      }
+      
+      try {
+        // تعطيل الزر أثناء المعالجة
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق...';
+        
+        // البحث عن المستخدم
+        const users = await window.dbManager.getAll('users');
+        const user = users.find(u => u.username === username);
+        
+        if (!user) {
+          errorMsg.textContent = '❌ المستخدم غير موجود';
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<span>دخول</span>';
+          return;
+        }
+        
+        // التحقق من كلمة المرور
+        const isValid = await window.passwordManager.verify(password, user.password);
+        
+        if (isValid) {
+          // تسجيل الدخول ناجح
+          resetAttempts();
+          
+          // حفظ الجلسة
+          window.sessionManager.login({
+            id: user.id,
+            username: user.username,
+            role: user.role
+          });
+          
+          // حفظ آخر مستخدم إذا تم اختيار "تذكرني"
+          if (document.getElementById('rememberMe').checked) {
+            localStorage.setItem('posdz_last_user', username);
+          }
+          
+          // عرض رسالة نجاح
+          window.toast.show(`مرحباً ${user.username}!`, 'success', 1500);
+          
+          // إشعار بتسجيل الدخول — يُرسل فقط إذا كان مفعّلاً ومرة واحدة لكل مستخدم في اليوم
+          if (window.notificationManager && typeof window.getSetting === 'function') {
+            Promise.all([
+              window.getSetting('notifEnabled'),
+              window.getSetting('notifyLogin')
+            ]).then(([notifOn, loginOn]) => {
+              if (notifOn === '1' && loginOn === '1') {
+                const today = new Date().toISOString().split('T')[0];
+                window.notificationManager.push(
+                  `login_${user.username}_${today}`,
+                  '👤',
+                  'دخول مستخدم',
+                  `${user.username} — دخل في ${new Date().toLocaleTimeString('ar-DZ')}`,
+                  'info'
+                );
+              }
+            }).catch(() => {});
+          }
+          
+          // التوجيه إلى الصفحة الرئيسية
+          setTimeout(() => {
+            window.location.href = 'sale.html';
+          }, 1000);
+          
+        } else {
+          // تسجيل الدخول فاشل
+          recordFailedAttempt();
+          errorMsg.textContent = '❌ الرقم السري غير صحيح';
+          document.getElementById('passwordInput').value = '';
+          document.getElementById('passwordInput').focus();
+          
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<span>دخول</span>';
+        }
+        
+      } catch (e) {
+        console.error('خطأ في تسجيل الدخول:', e);
+        errorMsg.textContent = '❌ حدث خطأ، حاول مرة أخرى';
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = '<span>دخول</span>';
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  دوال مساعدة
+    // ══════════════════════════════════════════════════════════════
+    function togglePassword() {
+      const input = document.getElementById('passwordInput');
+      const btn = document.getElementById('toggleEye');
+      
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁';
+      }
+    }
+
+    function vkbPress(key) {
+      const target = document.activeElement;
+      if (!target || target.tagName !== 'INPUT') return;
+      
+      if (key === '⌫') {
+        const start = target.selectionStart;
+        const end = target.selectionEnd;
+        target.value = target.value.substring(0, start) + target.value.substring(end);
+        target.setSelectionRange(start, start);
+      } else {
+        const start = target.selectionStart;
+        target.value = target.value.substring(0, start) + key + target.value.substring(target.selectionEnd);
+        target.setSelectionRange(start + key.length, start + key.length);
+      }
+      
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function vkbClose() {
+      document.getElementById('vkbOverlay').classList.remove('open');
+    }
+
+    function initVirtualKeyboard() {
+      document.addEventListener('focusin', async (e) => {
+        if (e.target.tagName !== 'INPUT') return;
+        
+        const enabled = await window.dbManager.get('settings', 'touchKeyboard');
+        if (enabled?.value === '1') {
+          document.getElementById('vkbOverlay').classList.add('open');
+        }
+      });
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  ربط الأحداث
+    // ══════════════════════════════════════════════════════════════
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.target.closest('.vkb-key')) {
+        e.preventDefault();
+        doLogin();
+      }
+    });
+
+    // تصدير الدوار العامة
+    window.doLogin      = doLogin;
+    window.togglePassword = togglePassword;
+    window.vkbPress     = vkbPress;
+    window.vkbClose     = vkbClose;
+
+    // ══════════════════════════════════════════════════════════════
+    //  نظام استرداد الرقم السري — يستخدم modal-overlay من style.css
+    // ══════════════════════════════════════════════════════════════
+    const RCV = { user: null, tries: 0, MAX: 3, ok: false };
+
+    // ── helpers ──
+    const $  = id => document.getElementById(id);
+    const setErr = (id, msg) => { $(id).textContent = msg; };
+    const hideAll = () => ['rp1','rp2a','rp2b','rp2c','rp3'].forEach(id => { $(id).style.display = 'none'; });
+    const show   = id => { $(id).style.display = ''; };
+
+    function rcvSetStep(n) {
+      [1,2,3].forEach(i => {
+        const el = $(`si${i}`);
+        if (!el) return;
+        el.classList.remove('s-active','s-done');
+        if (i < n)      el.classList.add('s-done');
+        else if (i === n) el.classList.add('s-active');
+      });
+    }
+
+    // ── فتح المودال (modal-overlay.open من style.css) ──
+    async function openRecovery() {
+      RCV.user = null; RCV.tries = 0; RCV.ok = false;
+
+      // تحميل المستخدمين
+      const users = await window.dbManager.getAll('users').catch(() => []);
+      const sel = $('rcvSel');
+      sel.innerHTML = '<option value="">— اختر المستخدم —</option>';
+      users.sort((a,b) => a.role === 'admin' ? -1 : b.role === 'admin' ? 1 : a.username.localeCompare(b.username));
+      users.forEach(u => {
+        const o = document.createElement('option');
+        o.value = u.id;
+        o.textContent = `${u.role==='admin'?'👑 ':u.role==='manager'?'🛡️ ':'👤 '}${u.username}`;
+        sel.appendChild(o);
+      });
+
+      // تحديد المستخدم المختار مسبقاً
+      const cur = $('usernameSelect')?.value;
+      if (cur) { const m = users.find(u=>u.username===cur); if(m) sel.value=m.id; }
+
+      // إعادة ضبط الواجهة
+      rcvSetStep(1); hideAll(); show('rp1');
+      ['rcvAns','rcvCode','rcvNew','rcvConf'].forEach(id=>$(id)&&($(id).value=''));
+      ['e1','e2b','e2c','e3'].forEach(id=>setErr(id,''));
+      $('rcvStrLbl').textContent=''; $('rcvMatchLbl').textContent='';
+      ['sb1','sb2','sb3','sb4'].forEach(id=>$(id).style.background='var(--border)');
+      rcvResetDots();
+      $('rcvAnsBtn').disabled = false;
+      $('rcvAns') && ($('rcvAns').disabled = false);
+
+      $('rcvOverlay').classList.add('open');
+    }
+
+    function closeRecovery() { $('rcvOverlay').classList.remove('open'); }
+    $('rcvOverlay').addEventListener('click', e => { if(e.target.id==='rcvOverlay') closeRecovery(); });
+
+    // ── الخطوة 1 ──
+    async function rcvNext1() {
+      setErr('e1','');
+      const id = parseInt($('rcvSel').value);
+      if (!$('rcvSel').value) { setErr('e1','⚠ يرجى اختيار المستخدم'); return; }
+
+      const users = await window.dbManager.getAll('users').catch(()=>[]);
+      RCV.user = users.find(u => u.id === id);
+      if (!RCV.user) { setErr('e1','❌ المستخدم غير موجود'); return; }
+
+      rcvSetStep(2);
+
+      if (RCV.user.role !== 'admin') {
+        hideAll(); show('rp2a');
+        return;
+      }
+
+      // مدير — تحقق من سؤال الأمان
+      let q = null;
+      try { q = await window.dbManager.get('settings','recoveryQuestion'); } catch(_){}
+
+      if (q?.value?.trim()) {
+        $('rcvQBox').innerHTML = `<i class="fa-solid fa-circle-question"></i>
+          <div><strong>سؤال الأمان:</strong><br>
+          <span style="color:var(--text-primary);font-size:0.95rem;">${esc(q.value)}</span></div>`;
+        rcvResetDots();
+        hideAll(); show('rp2b');
+      } else {
+        hideAll(); show('rp2c');
+      }
+    }
+
+    // ── الخطوة 2B: سؤال الأمان ──
+    async function rcvVerifyAns() {
+      const ans = $('rcvAns').value.trim();
+      setErr('e2b','');
+      if (!ans) { setErr('e2b','⚠ يرجى إدخال الإجابة'); return; }
+
+      const btn = $('rcvAnsBtn');
+      btn.classList.add('loading');
+      btn.innerHTML = '<i class="fa-solid fa-spinner"></i> جاري التحقق...';
+
+      let stored = null;
+      try { stored = await window.dbManager.get('settings','recoveryAnswer'); } catch(_){}
+      if (!stored) { btn.classList.remove('loading'); btn.innerHTML='<i class="fa-solid fa-shield-check"></i> تحقق من الإجابة'; setErr('e2b','❌ لم تُعدَّ إجابة في النظام'); return; }
+
+      const ok = await window.passwordManager.verify(ans.toLowerCase(), stored.value);
+      btn.classList.remove('loading'); btn.innerHTML='<i class="fa-solid fa-shield-check"></i> تحقق من الإجابة';
+
+      if (ok) { RCV.ok=true; rcvSetStep(3); hideAll(); show('rp3'); }
+      else {
+        RCV.tries++;
+        $(`ad${RCV.tries}`)?.classList.add('used');
+        const left = RCV.MAX - RCV.tries;
+        $('adTxt').textContent = left>0 ? `${left} ${left===1?'محاولة':'محاولات'} متبقية` : 'انتهت المحاولات';
+        if (left <= 0) {
+          setErr('e2b','🔒 تجاوزت عدد المحاولات المسموحة');
+          btn.disabled = true; $('rcvAns').disabled = true;
+        } else {
+          setErr('e2b',`❌ إجابة خاطئة — ${left} ${left===1?'محاولة':'محاولات'} متبقية`);
+          $('rcvAns').value=''; $('rcvAns').focus();
+        }
+      }
+    }
+
+    // ── الخطوة 2C: رمز الطوارئ ──
+    function rcvFmtCode(inp) {
+      let v = inp.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase().slice(0,16);
+      let o=''; for(let i=0;i<v.length;i++){if(i>0&&i%4===0)o+='-';o+=v[i];}
+      inp.value=o;
+    }
+
+    async function rcvVerifyCode() {
+      const code = $('rcvCode').value.trim();
+      setErr('e2c','');
+      if (!code) { setErr('e2c','⚠ يرجى إدخال الرمز'); return; }
+
+      let stored = null;
+      try { stored = await window.dbManager.get('settings','emergencyCode'); } catch(_){}
+      if (!stored) { setErr('e2c','❌ لا يوجد رمز طوارئ محفوظ في النظام'); return; }
+
+      if (code.replace(/-/g,'') === stored.value.replace(/-/g,'')) {
+        RCV.ok=true; rcvSetStep(3); hideAll(); show('rp3');
+      } else {
+        setErr('e2c','❌ الرمز غير صحيح');
+        $('rcvCode').classList.add('error');
+        setTimeout(()=>$('rcvCode').classList.remove('error'),800);
+      }
+    }
+
+    // ── الخطوة 3: حفظ كلمة المرور ──
+    function rcvStrength() {
+      const p=$('rcvNew').value;
+      const cols=['var(--danger)','var(--warning)','#3B82F6','var(--success)'];
+      const lbls=['ضعيفة','متوسطة','جيدة','قوية 💪'];
+      if(!p){['sb1','sb2','sb3','sb4'].forEach(id=>$(id).style.background='var(--border)');$('rcvStrLbl').textContent='';return;}
+      let s=0;
+      if(p.length>=6)s++;if(p.match(/[a-zA-Z]/))s++;if(p.match(/[0-9]/))s++;if(p.match(/[^a-zA-Z0-9]/))s++;
+      s=Math.max(0,s-1);
+      ['sb1','sb2','sb3','sb4'].forEach((id,i)=>$(id).style.background=i<=s?cols[s]:'var(--border)');
+      $('rcvStrLbl').innerHTML=`<span style="color:${cols[s]}">● ${lbls[s]}</span>`;
+      rcvMatch();
+    }
+
+    function rcvMatch() {
+      const p=$('rcvNew').value, c=$('rcvConf').value, el=$('rcvMatchLbl');
+      if(!c){el.textContent='';return;}
+      el.innerHTML=p===c
+        ?'<span style="color:var(--success);"><i class="fa-solid fa-check"></i> متطابقان</span>'
+        :'<span style="color:var(--danger);"><i class="fa-solid fa-xmark"></i> غير متطابقين</span>';
+    }
+
+    function rcvEye(inputId, btn) {
+      const inp=$(inputId), ic=btn.querySelector('i');
+      inp.type=inp.type==='password'?'text':'password';
+      ic.className=inp.type==='password'?'fa-solid fa-eye':'fa-solid fa-eye-slash';
+    }
+
+    function rcvResetDots() {
+      ['ad1','ad2','ad3'].forEach(id=>$(`${id}`)?.classList.remove('used'));
+      const t=$('adTxt'); if(t)t.textContent=`${RCV.MAX} محاولات متاحة`;
+    }
+
+    async function rcvSave() {
+      if (!RCV.ok || !RCV.user) return;
+      const p=$('rcvNew').value, c=$('rcvConf').value;
+      setErr('e3','');
+      if(!p)           { setErr('e3','⚠ يرجى إدخال الرقم السري الجديد'); return; }
+      if(p.length<4)   { setErr('e3','⚠ قصير جداً — 4 أحرف على الأقل'); return; }
+      if(p!==c)        { setErr('e3','❌ الرقمان غير متطابقين'); return; }
+
+      const btn=$('rcvSaveBtn');
+      btn.classList.add('loading'); btn.innerHTML='<i class="fa-solid fa-spinner"></i> جاري الحفظ...';
+      try {
+        RCV.user.password  = await window.passwordManager.hash(p);
+        RCV.user.updatedAt = new Date().toISOString();
+        await window.dbManager.put('users', RCV.user);
+        btn.classList.remove('loading');
+        closeRecovery();
+        window.toast?.show(`✅ تم تعيين رقم سري جديد لـ "${RCV.user.username}"`, 'success', 3000);
+        const sel=$('usernameSelect'); if(sel) sel.value=RCV.user.username;
+        $('passwordInput').value=''; $('passwordInput').focus();
+      } catch(err) {
+        btn.classList.remove('loading'); btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> حفظ الرقم السري الجديد';
+        setErr('e3','❌ حدث خطأ أثناء الحفظ');
+      }
+    }
+
+    function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    window.openRecovery=openRecovery; window.closeRecovery=closeRecovery;
+    window.rcvNext1=rcvNext1; window.rcvVerifyAns=rcvVerifyAns;
+    window.rcvVerifyCode=rcvVerifyCode; window.rcvFmtCode=rcvFmtCode;
+    window.rcvStrength=rcvStrength; window.rcvMatch=rcvMatch;
+    window.rcvEye=rcvEye; window.rcvSave=rcvSave;
+  </script>
+</body>
+</html>

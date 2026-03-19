@@ -1,0 +1,3079 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="shortcut icon" href="favicon.svg"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HP-POS - إدارة المخزون</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <style>
+    /* =========================================
+       تخطيط متطور للمخزون
+    ========================================= */
+    .inventory-layout {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: var(--bg-dark);
+    }
+
+    /* بطاقات التنبيهات */
+    .alerts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .alert-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .alert-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .alert-card:hover::before { opacity: 1; }
+
+    .alert-card.warning {
+      border-right: 5px solid var(--warning);
+      background: linear-gradient(135deg, var(--bg-card) 70%, rgba(245,158,11,0.06));
+    }
+    .alert-card.warning::before {
+      background: rgba(245,158,11,0.04);
+    }
+
+    .alert-card.danger {
+      border-right: 5px solid var(--danger);
+      background: linear-gradient(135deg, var(--bg-card) 70%, rgba(239,68,68,0.06));
+    }
+    .alert-card.danger::before {
+      background: rgba(239,68,68,0.04);
+    }
+
+    .alert-card.success {
+      border-right: 5px solid var(--success);
+      background: linear-gradient(135deg, var(--bg-card) 70%, rgba(16,185,129,0.06));
+    }
+
+    /* رأس البطاقة: أيقونة + عنوان */
+    .alert-card-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .alert-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .alert-icon.warning {
+      background: rgba(245, 158, 11, 0.18);
+      color: var(--warning);
+    }
+
+    .alert-icon.danger {
+      background: rgba(239, 68, 68, 0.18);
+      color: var(--danger);
+    }
+
+    .alert-icon.success {
+      background: rgba(16, 185, 129, 0.18);
+      color: var(--success);
+    }
+
+    .alert-title {
+      font-size: 0.92rem;
+      color: var(--text-primary);
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    /* الرقم الرئيسي */
+    .alert-value {
+      font-size: 3rem;
+      font-weight: 900;
+      font-family: 'Impact', sans-serif;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    /* شريط المستويات الفرعية */
+    .alert-levels {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .alert-level-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .alert-level-badge.crit  { background: rgba(239,68,68,0.15);  color: #ef4444; }
+    .alert-level-badge.warn  { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .alert-level-badge.watch { background: rgba(59,130,246,0.15); color: #60a5fa; }
+
+    /* شريط البحث المتقدم */
+    .search-section {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrapper {
+      flex: 1;
+      min-width: 280px;
+      position: relative;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0 16px;
+      transition: all 0.2s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    .search-box i {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 14px 10px;
+    }
+
+    .filter-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 12px;
+    }
+
+    .filter-badge select {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-weight: 600;
+      padding: 8px 0;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* التبويبات */
+    .tabs-modern {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+      overflow-x: auto;
+    }
+
+    .tab-modern {
+      padding: 8px 20px;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      border-bottom: none;
+    }
+
+    .tab-modern:hover {
+      color: var(--text-primary);
+      background: rgba(124, 58, 237, 0.05);
+    }
+
+    .tab-modern.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* جدول المنتجات المتطور */
+    .table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 18px;
+      background: var(--bg-dark);
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .table-title {
+      font-weight: 800;
+      color: var(--primary-light);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .products-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .products-table th {
+      background: var(--bg-dark);
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 14px 12px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .products-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+
+    .products-table tbody tr {
+      transition: background 0.15s;
+    }
+
+    .products-table tbody tr:hover {
+      background: rgba(124, 58, 237, 0.05);
+    }
+
+    .products-table tbody tr.low-stock {
+      background: rgba(245, 158, 11, 0.05);
+    }
+
+    .products-table tbody tr.out-stock {
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .stock-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .stock-high {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+    }
+
+    /* 🟡 تنبيه مبكر */
+    .stock-watch {
+      background: rgba(245, 158, 11, 0.12);
+      color: #f59e0b;
+    }
+
+    /* ⚠️ تحذير */
+    .stock-warning {
+      background: rgba(234, 88, 12, 0.15);
+      color: #ea580c;
+    }
+
+    /* 🚨 حرج */
+    .stock-critical {
+      background: rgba(239, 68, 68, 0.18);
+      color: var(--danger);
+      font-weight: 900;
+    }
+
+    /* ⛔ نافد */
+    .stock-low {
+      background: rgba(107, 114, 128, 0.2);
+      color: #9ca3af;
+      text-decoration: line-through;
+    }
+
+    /* للتوافق مع الكود القديم */
+    .stock-medium { background: rgba(245,158,11,0.12); color: #f59e0b; }
+
+    .expiry-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .expiry-ok {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+    }
+
+    .expiry-warning {
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--warning);
+    }
+
+    .expiry-danger {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+    }
+
+    /* المستوى الرابع: حرج جداً (أقل من 7 أيام) */
+    .expiry-critical {
+      background: rgba(234, 88, 12, 0.18);
+      color: #ea580c;
+      font-weight: 800;
+      animation: pulse-badge 1.5s infinite;
+    }
+
+    @keyframes pulse-badge {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.6; }
+    }
+
+    /* جدول تبويب الصلاحية */
+    .expiry-tab-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .expiry-summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .exp-icon {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; flex-shrink: 0;
+    }
+
+    .exp-icon.red   { background: rgba(239,68,68,0.15);  color: var(--danger);  }
+    .exp-icon.orange{ background: rgba(234,88,12,0.15);  color: #ea580c;        }
+    .exp-icon.yellow{ background: rgba(245,158,11,0.15); color: var(--warning); }
+
+    .exp-label { font-size: 0.78rem; color: var(--text-secondary); font-weight:700; margin-bottom:3px; }
+    .exp-value { font-size: 1.5rem; font-weight:900; font-family:'Impact',sans-serif; }
+
+    .expiry-table-wrap { overflow-x: auto; }
+
+    .expiry-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .expiry-table th {
+      background: var(--bg-dark);
+      color: var(--text-secondary);
+      font-weight: 800; font-size: 0.78rem;
+      padding: 10px 14px; text-align: right;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .expiry-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .expiry-table tr:hover td { background: rgba(124,58,237,0.04); }
+
+    .batch-num {
+      display: inline-block;
+      background: rgba(124,58,237,0.12);
+      color: var(--primary-light);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    /* ── لوحة القرارات ─────────────────────────────── */
+    .risk-loss-badge {
+      display: inline-block;
+      background: rgba(239,68,68,0.12);
+      color: var(--danger);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px;
+      padding: 2px 10px;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .risk-rate-badge {
+      display: inline-block;
+      background: rgba(124,58,237,0.1);
+      color: var(--primary-light);
+      border-radius: 8px;
+      padding: 2px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .action-panel-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      border: none;
+      font-family: var(--font-main);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .action-panel-btn.discount {
+      background: rgba(245,158,11,0.15);
+      color: var(--warning);
+      border: 1px solid rgba(245,158,11,0.4);
+    }
+    .action-panel-btn.discount:hover { background: var(--warning); color:#1a1a1a; }
+
+    .action-panel-btn.writeoff {
+      background: rgba(239,68,68,0.12);
+      color: var(--danger);
+      border: 1px solid rgba(239,68,68,0.35);
+    }
+    .action-panel-btn.writeoff:hover { background: var(--danger); color:#fff; }
+
+    .action-panel-btn.restore {
+      background: rgba(16,185,129,0.12);
+      color: var(--success);
+      border: 1px solid rgba(16,185,129,0.35);
+    }
+    .action-panel-btn.restore:hover { background: var(--success); color:#fff; }
+
+    /* بطاقات الملخص — إضافة حقل الخسارة المالية */
+    .exp-loss {
+      font-size: 0.72rem;
+      color: var(--danger);
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    /* شريط التنبيه الذكي أعلى الصفحة */
+    .expiry-alert-banner {
+      background: linear-gradient(135deg, rgba(234,88,12,0.15), rgba(239,68,68,0.1));
+      border: 1px solid rgba(234,88,12,0.4);
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      animation: pulse-border 2s infinite;
+    }
+
+    @keyframes pulse-border {
+      0%,100% { border-color: rgba(234,88,12,0.4); }
+      50%      { border-color: rgba(239,68,68,0.7); }
+    }
+
+    .expiry-alert-banner.hidden { display: none; }
+
+    .action-buttons {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+    }
+
+    .action-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .action-btn:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .action-btn.delete:hover {
+      background: var(--danger);
+    }
+
+    .action-btn.print:hover {
+      background: var(--success);
+    }
+
+    /* نموذج إضافة/تعديل منتج */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full-width {
+      grid-column: span 2;
+    }
+
+    .form-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-label i {
+      color: var(--primary);
+      font-size: 0.8rem;
+    }
+
+    .form-input {
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      padding: 10px 14px;
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    .form-input.error {
+      border-color: var(--danger);
+    }
+
+    .form-select {
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      padding: 10px 14px;
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .error-message {
+      color: var(--danger);
+      font-size: 0.8rem;
+      margin-top: 4px;
+      display: none;
+    }
+
+    /* بطاقات العائلات */
+    .families-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .family-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+
+    .family-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .family-name {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .family-count {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      background: var(--bg-dark);
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    .family-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    /* لوحة تعديل المخزون */
+    .adjust-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .adjust-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .adjust-preview {
+      background: var(--bg-dark);
+      border-radius: var(--radius-sm);
+      padding: 15px;
+      text-align: center;
+      margin: 15px 0;
+    }
+
+    .preview-value {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--primary-light);
+      font-family: 'Impact', sans-serif;
+    }
+
+    .preview-diff {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-top: 5px;
+    }
+
+    .diff-positive {
+      color: var(--success);
+    }
+
+    .diff-negative {
+      color: var(--danger);
+    }
+
+    /* سجل الحركات */
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .log-table th {
+      background: var(--bg-dark);
+      color: var(--text-secondary);
+      font-weight: 700;
+      padding: 12px 10px;
+      text-align: right;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .log-table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .log-table tbody tr:hover {
+      background: rgba(124, 58, 237, 0.05);
+    }
+
+    /* استيراد/تصدير */
+    .import-export-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .import-card {
+      background: var(--bg-card);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .import-card:hover {
+      border-color: var(--primary);
+      background: rgba(124, 58, 237, 0.05);
+    }
+
+    .import-icon {
+      font-size: 3rem;
+      color: var(--primary-light);
+      margin-bottom: 15px;
+    }
+
+    .import-title {
+      font-weight: 800;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
+
+    .import-desc {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    /* الترقيم الصفحات */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .page-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-btn:hover,
+    .page-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+<div class="bg-animated"></div>
+
+<div class="inventory-layout">
+  <!-- الهيدر -->
+  <header class="app-header">
+    <button class="menu-btn" id="menuBtn">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <a href="sale.html" class="back-btn" title="واجهة البيع">
+      <i class="fa-solid fa-cash-register"></i>
+    </a>
+    
+    <span class="store-name" id="headerStoreName">جاري التحميل...</span>
+    
+    <div class="app-brand">
+      <span class="brand-title">HP-POS</span>
+      <span class="brand-clock" id="clockDisplay"></span>
+    </div>
+  </header>
+
+  <!-- المحتوى الرئيسي -->
+  <div style="flex:1; padding:20px; overflow-y:auto;">
+    
+    <!-- بطاقات التنبيهات -->
+    <div class="alerts-grid" id="alertsGrid"></div>
+
+    <!-- التبويبات -->
+    <div class="tabs-modern">
+      <button class="tab-modern active" onclick="switchTab('all')">
+        <i class="fa-solid fa-boxes"></i>
+        <span>كل المنتجات</span>
+      </button>
+      <button class="tab-modern" onclick="switchTab('add')">
+        <i class="fa-solid fa-plus-circle"></i>
+        <span>إضافة منتج</span>
+      </button>
+      <button class="tab-modern" onclick="switchTab('families')">
+        <i class="fa-solid fa-layer-group"></i>
+        <span>العائلات</span>
+      </button>
+      <button class="tab-modern" onclick="switchTab('adjust')">
+        <i class="fa-solid fa-sliders"></i>
+        <span>تعديل المخزون</span>
+      </button>
+      <button class="tab-modern" onclick="switchTab('import')">
+        <i class="fa-solid fa-file-import"></i>
+        <span>استيراد/تصدير</span>
+      </button>
+      <button class="tab-modern" onclick="switchTab('expiry')">
+        <i class="fa-solid fa-calendar-xmark"></i>
+        <span>الصلاحية</span>
+      </button>
+    </div>
+
+    <!-- ========== تبويب: كل المنتجات ========== -->
+    <div class="tab-content active" id="tab-all">
+      <div class="search-section">
+        <div class="search-wrapper">
+          <div class="search-box">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" id="productSearch" 
+                   placeholder="ابحث باسم المنتج أو الباركود..."
+                   oninput="filterProducts()"/>
+          </div>
+        </div>
+        
+        <div class="filter-badge">
+          <i class="fa-solid fa-filter" style="color:var(--text-secondary);"></i>
+          <select id="familyFilter" onchange="filterProducts()">
+            <option value="">كل العائلات</option>
+          </select>
+        </div>
+        
+        <div class="filter-badge">
+          <i class="fa-solid fa-chart-line" style="color:var(--text-secondary);"></i>
+          <select id="stockFilter" onchange="filterProducts()">
+            <option value="">كل المخزون</option>
+            <option value="low">مخزون منخفض</option>
+            <option value="out">نافد</option>
+            <option value="expiring">ينتهي قريباً</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">
+            <i class="fa-solid fa-box"></i>
+            <span>قائمة المنتجات</span>
+          </div>
+          <div class="table-actions">
+            <button class="btn btn-sm btn-primary" onclick="exportCurrentPage()">
+              <i class="fa-solid fa-download"></i> تصدير
+            </button>
+            <span id="paginationInfo" style="color:var(--text-secondary); font-size:0.85rem;"></span>
+          </div>
+        </div>
+        
+        <div style="overflow-x: auto;">
+          <table class="products-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>المنتج</th>
+                <th>العائلة</th>
+                <th>الوحدة</th>
+                <th>سعر الشراء</th>
+                <th>سعر البيع</th>
+                <th>المخزون</th>
+                <th>الصلاحية</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="productsTbody">
+              <tr>
+                <td colspan="9" style="text-align:center; padding:50px;">
+                  <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; color:var(--primary);"></i>
+                  <p style="margin-top:10px;">جاري التحميل...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- أزرار التنقل بين الصفحات -->
+      <div class="pagination" id="pagination">
+        <button class="page-btn" id="prevPage" onclick="changePage(-1)" disabled>
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        <span id="pageNumbers"></span>
+        <button class="page-btn" id="nextPage" onclick="changePage(1)" disabled>
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ========== تبويب: إضافة منتج ========== -->
+    <div class="tab-content" id="tab-add">
+      <div class="table-container" style="padding:25px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:25px;">
+          <i class="fa-solid fa-plus-circle" style="font-size:1.8rem; color:var(--primary);"></i>
+          <h2 style="color:var(--primary-light); font-size:1.3rem; margin:0;" id="formTitle">إضافة منتج جديد</h2>
+        </div>
+
+        <input type="hidden" id="editProductId"/>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fa-solid fa-layer-group"></i>
+              <span>العائلة</span>
+            </label>
+            <select class="form-select" id="productFamily">
+              <option value="">-- بدون عائلة --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fa-solid fa-tag"></i>
+              <span>اسم المنتج *</span>
+            </label>
+            <input type="text" class="form-input" id="productName" 
+                   placeholder="أدخل اسم المنتج"/>
+            <div class="error-message" id="nameError">⚠️ هذا الاسم موجود مسبقاً</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fa-solid fa-ruler"></i>
+              <span>الحجم / المقاس</span>
+            </label>
+            <input type="text" class="form-input" id="productSize" 
+                   placeholder="مثال: 500ml، L، XL"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fa-solid fa-weight-scale"></i>
+              <span>الوحدة</span>
+            </label>
+            <select class="form-select" id="productUnit">
+              <option value="قطعة">قطعة</option>
+              <option value="كلغ">كيلوغرام</option>
+              <option value="غرام">غرام</option>
+              <option value="لتر">لتر</option>
+              <option value="علبة">علبة</option>
+              <option value="كرتون">كرتون</option>
+              <option value="حزمة">حزمة</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fa-solid fa-arrow-down"></i>
+              <span>سعر الشراء</span>
+            </label>
+            <input type="number" class="form-input" id="productBuyPrice" 
+                   placeholder="0.00" min="0" step="0.01"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fa-solid fa-arrow-up" style="color:var(--success);"></i>
+              <span>سعر البيع *</span>
+            </label>
+            <input type="number" class="form-input" id="productSellPrice" 
+                   placeholder="0.00" min="0" step="0.01"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fa-solid fa-hashtag"></i>
+              <span>الكمية</span>
+            </label>
+            <input type="number" class="form-input" id="productQty" 
+                   placeholder="0" min="0" step="1"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fa-solid fa-bell"></i>
+              <span>حد التنبيه</span>
+            </label>
+            <input type="number" class="form-input" id="productMinStock" 
+                   placeholder="5" min="0" value="5"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <i class="fa-solid fa-calendar"></i>
+              <span>تاريخ الصلاحية</span>
+            </label>
+            <input type="date" class="form-input" id="productExpiry"/>
+          </div>
+
+          <div class="form-group full-width">
+            <label class="form-label">
+              <i class="fa-solid fa-barcode"></i>
+              <span>الباركود</span>
+            </label>
+            <input type="text" class="form-input" id="productBarcode" 
+                   placeholder="أدخل رقم الباركود"/>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:20px;">
+          <button class="btn btn-success" style="flex:2;" onclick="saveProduct()">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span id="saveButtonText">حفظ المنتج</span>
+          </button>
+          <button class="btn btn-secondary" style="flex:1;" onclick="clearProductForm()">
+            <i class="fa-solid fa-rotate-left"></i>
+            <span>تفريغ</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== تبويب: العائلات ========== -->
+    <div class="tab-content" id="tab-families">
+      <div class="table-container" style="padding:25px;">
+        <div style="display:flex; gap:15px; align-items:center; margin-bottom:25px;">
+          <i class="fa-solid fa-layer-group" style="font-size:1.8rem; color:var(--primary);"></i>
+          <h2 style="color:var(--primary-light); font-size:1.3rem; margin:0;">إدارة العائلات</h2>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-bottom:25px;">
+          <input type="text" class="form-input" id="familyInput" 
+                 placeholder="اسم العائلة الجديدة" style="flex:1;"/>
+          <button class="btn btn-primary" onclick="addFamily()">
+            <i class="fa-solid fa-plus"></i> إضافة
+          </button>
+        </div>
+
+        <div class="families-grid" id="familiesGrid">
+          <!-- ستتملأ ديناميكياً -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== تبويب: تعديل المخزون ========== -->
+    <div class="tab-content" id="tab-adjust">
+      <div class="adjust-grid">
+        <!-- لوحة التعديل -->
+        <div class="adjust-panel">
+          <h3 style="color:var(--primary-light); margin-bottom:20px;">
+            <i class="fa-solid fa-sliders"></i> تعديل الكمية
+          </h3>
+
+          <div class="form-group" style="margin-bottom:15px;">
+            <label class="form-label">المنتج</label>
+            <select class="form-select" id="adjustProduct" onchange="updateAdjustPreview()">
+              <option value="">-- اختر منتجاً --</option>
+            </select>
+          </div>
+
+          <div class="adjust-preview" id="adjustPreview">
+            <div style="color:var(--text-secondary); margin-bottom:8px;">الكمية الحالية</div>
+            <div class="preview-value" id="currentQty">—</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">نوع التعديل</label>
+            <select class="form-select" id="adjustType" onchange="updateAdjustPreview()">
+              <option value="add">➕ إضافة كمية</option>
+              <option value="sub">➖ خصم كمية</option>
+              <option value="set">📌 تعيين كمية محددة</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" id="adjustQtyLabel">الكمية</label>
+            <input type="number" class="form-input" id="adjustQty" 
+                   min="0" step="1" oninput="updateAdjustPreview()"/>
+          </div>
+
+          <div id="adjustResult" style="margin:15px 0; display:none;">
+            <div style="background:var(--bg-dark); border-radius:8px; padding:12px; text-align:center;">
+              <div style="color:var(--text-secondary); font-size:0.85rem;">الكمية بعد التعديل</div>
+              <div style="font-size:2rem; font-weight:900; color:var(--primary-light);" id="newQty">—</div>
+              <div id="diffDisplay" style="font-size:1rem; font-weight:700;"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">السبب</label>
+            <select class="form-select" id="adjustReason" onchange="toggleCustomReason()">
+              <option value="استلام بضاعة">📦 استلام بضاعة</option>
+              <option value="تلف">💔 تلف</option>
+              <option value="سرقة">🚨 سرقة</option>
+              <option value="هدية">🎁 هدية / عينة</option>
+              <option value="جرد">📋 جرد</option>
+              <option value="تصحيح">✏️ تصحيح خطأ</option>
+              <option value="آخر">✍️ آخر</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="customReasonGroup" style="display:none;">
+            <input type="text" class="form-input" id="customReason" placeholder="اكتب السبب..."/>
+          </div>
+
+          <!-- حقل تاريخ الصلاحية — يظهر فقط عند "استلام بضاعة" -->
+          <div class="form-group" id="batchExpiryGroup" style="display:none;">
+            <label class="form-label">
+              <i class="fa-solid fa-calendar-days" style="color:var(--warning);"></i>
+              تاريخ صلاحية هذه الدفعة
+            </label>
+            <input type="date" class="form-input" id="batchExpiryDate"/>
+            <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:6px; padding:8px; background:var(--bg-dark); border-radius:6px;">
+              <i class="fa-solid fa-circle-info" style="color:var(--primary-light);"></i>
+              ستُحفظ هذه الدفعة مستقلة عن الدفعات السابقة لنفس المنتج
+            </div>
+          </div>
+
+          <button class="btn btn-success" style="width:100%; margin-top:10px;" onclick="saveAdjustment()">
+            <i class="fa-solid fa-check"></i> تأكيد التعديل
+          </button>
+        </div>
+
+        <!-- سجل الحركات -->
+        <div class="adjust-panel">
+          <h3 style="color:var(--primary-light); margin-bottom:20px;">
+            <i class="fa-solid fa-clock-rotate-left"></i> سجل الحركات
+          </h3>
+
+          <div style="margin-bottom:15px;">
+            <select class="form-select" id="logFilter" onchange="loadMovementLog()">
+              <option value="0">كل المنتجات</option>
+            </select>
+          </div>
+
+          <div style="max-height:400px; overflow-y:auto;">
+            <table class="log-table">
+              <thead>
+                <tr>
+                  <th>التاريخ</th>
+                  <th>المنتج</th>
+                  <th>النوع</th>
+                  <th>الفرق</th>
+                  <th>السبب</th>
+                </tr>
+              </thead>
+              <tbody id="logTbody">
+                <tr>
+                  <td colspan="5" style="text-align:center; padding:30px;">
+                    <i class="fa-solid fa-clock" style="font-size:2rem; opacity:0.3;"></i>
+                    <p style="margin-top:10px;">لا توجد حركات مسجلة</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== تبويب: الصلاحية (FEFO) ========== -->
+    <div class="tab-content" id="tab-expiry">
+
+      <!-- بطاقات الملخص -->
+      <div class="expiry-tab-grid" id="expirySummaryGrid">
+        <div class="expiry-summary-card">
+          <div class="exp-icon red"><i class="fa-solid fa-circle-xmark"></i></div>
+          <div>
+            <div class="exp-label">دفعات منتهية الصلاحية</div>
+            <div class="exp-value" id="expSumExpired">—</div>
+            <div class="exp-loss" id="expSumExpiredLoss"></div>
+          </div>
+        </div>
+        <div class="expiry-summary-card">
+          <div class="exp-icon orange"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div>
+            <div class="exp-label">دفعات حرجة (أقل 15 يوم)</div>
+            <div class="exp-value" id="expSumCritical">—</div>
+            <div class="exp-loss" id="expSumCriticalLoss"></div>
+          </div>
+        </div>
+        <div class="expiry-summary-card">
+          <div class="exp-icon yellow"><i class="fa-solid fa-clock"></i></div>
+          <div>
+            <div class="exp-label">إجمالي الخسارة المتوقعة</div>
+            <div class="exp-value" id="expSumWarning">—</div>
+            <div class="exp-loss" id="expSumTotalLoss"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- فلتر + عنوان -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-weight:800; color:var(--primary-light);">
+            <i class="fa-solid fa-list-ol"></i> قائمة الدفعات — مرتبة من الأخطر للأسلم
+          </span>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button onclick="filterExpiryTab('all')"    id="efBtn-all"      class="btn btn-secondary" style="font-size:0.8rem; padding:6px 14px;">الكل</button>
+          <button onclick="filterExpiryTab('expired')" id="efBtn-expired"  class="btn btn-secondary" style="font-size:0.8rem; padding:6px 14px;">🔴 منتهية</button>
+          <button onclick="filterExpiryTab('critical')" id="efBtn-critical" class="btn btn-secondary" style="font-size:0.8rem; padding:6px 14px;">🟠 حرجة</button>
+          <button onclick="filterExpiryTab('warning')" id="efBtn-warning"  class="btn btn-secondary" style="font-size:0.8rem; padding:6px 14px;">🟡 تنبيه</button>
+        </div>
+      </div>
+
+      <!-- جدول الدفعات -->
+      <div class="expiry-table-wrap">
+        <table class="expiry-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>المنتج</th>
+              <th>رقم الدفعة</th>
+              <th>الكمية</th>
+              <th>تاريخ الصلاحية</th>
+              <th>الأيام</th>
+              <th>الخطر الفعلي</th>
+              <th>الخسارة المتوقعة</th>
+              <th>الحالة</th>
+              <th>الإجراء</th>
+            </tr>
+          </thead>
+          <tbody id="expiryTbody">
+            <tr>
+              <td colspan="10" style="text-align:center; padding:40px; color:var(--text-secondary);">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;"></i>
+                <p style="margin-top:10px;">جاري التحليل...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== تبويب: استيراد/تصدير ========== -->
+    <div class="tab-content" id="tab-import">
+      <div class="import-export-grid">
+        <!-- استيراد -->
+        <div class="import-card" onclick="document.getElementById('importFile').click()">
+          <div class="import-icon">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <div class="import-title">استيراد منتجات</div>
+          <div class="import-desc">CSV, Excel</div>
+          <input type="file" id="importFile" accept=".csv,.xlsx" style="display:none;" onchange="handleImport(this)"/>
+        </div>
+
+        <!-- تصدير -->
+        <div class="import-card" onclick="exportProducts()">
+          <div class="import-icon">
+            <i class="fa-solid fa-cloud-arrow-down"></i>
+          </div>
+          <div class="import-title">تصدير منتجات</div>
+          <div class="import-desc">CSV, Excel</div>
+        </div>
+
+        <!-- تحميل نموذج -->
+        <div class="import-card" onclick="downloadTemplate()">
+          <div class="import-icon">
+            <i class="fa-solid fa-file-csv"></i>
+          </div>
+          <div class="import-title">تحميل نموذج</div>
+          <div class="import-desc">قالب جاهز للتعبئة</div>
+        </div>
+
+        <!-- طباعة باركود -->
+        <div class="import-card" onclick="printBarcodeBatch()">
+          <div class="import-icon">
+            <i class="fa-solid fa-barcode"></i>
+          </div>
+          <div class="import-title">طباعة باركود</div>
+          <div class="import-desc">طباعة ملصقات للمنتجات</div>
+        </div>
+      </div>
+
+      <!-- شريط التقدم للاستيراد -->
+      <div id="importProgress" style="display:none; margin-top:20px;">
+        <div style="background:var(--bg-dark); border-radius:8px; padding:15px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span>جاري الاستيراد...</span>
+            <span id="importPercent">0%</span>
+          </div>
+          <div style="height:6px; background:var(--border); border-radius:3px; overflow:hidden;">
+            <div id="importBar" style="width:0%; height:100%; background:var(--primary); transition:width 0.3s;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: تأكيد الاستيراد -->
+<div class="modal-overlay" id="importConfirmModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">تأكيد الاستيراد</span>
+      <button class="modal-close" onclick="closeModal('importConfirmModal')">✕</button>
+    </div>
+    <div id="importConflicts" style="max-height:300px; overflow-y:auto; margin:15px 0;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-success" onclick="confirmImport(true)">تحديث الموجود</button>
+      <button class="btn btn-warning" onclick="confirmImport(false)">تجاهل المكرر</button>
+      <button class="btn btn-secondary" onclick="closeModal('importConfirmModal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: طباعة باركود -->
+<div class="modal-overlay" id="barcodePrintModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-title">طباعة ملصقات الباركود</span>
+      <button class="modal-close" onclick="closeModal('barcodePrintModal')">✕</button>
+    </div>
+    
+    <div style="padding:15px 0;">
+      <div class="form-group">
+        <label class="form-label">المنتج</label>
+        <select class="form-select" id="barcodeProduct"></select>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">عدد النسخ</label>
+        <input type="number" class="form-input" id="barcodeCopies" value="1" min="1" max="999"/>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="printSelectedBarcode()">
+        <i class="fa-solid fa-print"></i> طباعة
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('barcodePrintModal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ شريط التنبيه الذكي (يظهر عند وجود خسائر حقيقية) ══ -->
+<div class="expiry-alert-banner hidden" id="expiryBanner">
+  <div style="display:flex; align-items:center; gap:10px; flex:1;">
+    <i class="fa-solid fa-triangle-exclamation" style="color:#ea580c; font-size:1.2rem;"></i>
+    <span id="expiryBannerText" style="font-weight:800; font-size:0.92rem;"></span>
+  </div>
+  <button class="btn btn-danger" style="font-size:0.82rem; padding:6px 14px;"
+          onclick="switchTab('expiry')">
+    <i class="fa-solid fa-arrow-left"></i> لوحة القرارات
+  </button>
+  <button onclick="document.getElementById('expiryBanner').classList.add('hidden')"
+          style="background:transparent; border:none; color:var(--text-secondary);
+                 cursor:pointer; font-size:1.1rem; padding:4px 8px;">✕</button>
+</div>
+
+<!-- ══ modal إجراء الدفعة ══ -->
+<div class="modal-overlay" id="batchActionModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-title" id="batchActionTitle">
+        <i class="fa-solid fa-bolt"></i> إجراء الدفعة
+      </span>
+      <button class="modal-close" onclick="closeModal('batchActionModal')">✕</button>
+    </div>
+
+    <div id="batchActionBody" style="margin-bottom:16px;"></div>
+
+    <!-- خصم -->
+    <div id="discountSection" style="display:none;">
+      <div style="background:var(--bg-dark); border-radius:8px; padding:14px; margin-bottom:14px;">
+        <div style="color:var(--text-secondary); font-size:0.82rem; margin-bottom:8px; font-weight:700;">
+          <i class="fa-solid fa-tag"></i> نسبة الخصم الجديدة
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <input type="number" id="discountPctInput" class="form-input"
+                 min="1" max="90" step="1" style="width:100px; text-align:center; font-size:1.2rem; font-weight:800;"
+                 oninput="previewDiscount()"/>
+          <span style="font-weight:700;">%</span>
+          <span id="discountPreview" style="color:var(--success); font-weight:800; font-size:0.9rem;"></span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:8px;">
+          * سيُطبَّق على سعر البيع في صفحة المنتج ويُسجَّل السعر الأصلي
+        </div>
+      </div>
+    </div>
+
+    <!-- شطب -->
+    <div id="writeoffSection" style="display:none;">
+      <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3);
+                  border-radius:8px; padding:14px; margin-bottom:14px;">
+        <div style="color:var(--danger); font-weight:800; margin-bottom:6px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> تأكيد الشطب
+        </div>
+        <div id="writeoffDetail" style="font-size:0.88rem; color:var(--text-secondary);"></div>
+        <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:8px;">
+          * ستُسجَّل الخسارة تلقائياً في قسم المصاريف
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-primary" id="batchActionConfirmBtn" onclick="confirmBatchAction()">
+        <i class="fa-solid fa-check"></i> تأكيد
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('batchActionModal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar" id="sidebar">
+  <!-- محتوى sidebar قياسي -->
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="print.js"></script>
+<script src="app.js"></script>
+<script src="sync.js"></script>
+<script>
+// ============================================================
+//  HP-POS - inventory.js  v8.1.0  (محسن بالكامل)
+// ============================================================
+
+// متغيرات عامة
+let allProducts = [];
+let allFamilies = [];
+let allBatches  = [];          // دفعات المنتجات (productBatches)
+let expiryAlertDays   = 30;    // للتوافق (يُستبدل بالمتغيرات التفصيلية)
+let expiryWatchDays   = 45;    // 🟡 تنبيه مبكر
+let expiryWarningDays = 30;    // ⚠️ تحذير
+let expiryCriticalDays= 15;    // 🚨 حرج
+let stockWatchQty     = 20;    // 🟡 تنبيه مبكر مخزون
+let stockWarningQty   = 15;    // ⚠️ تحذير مخزون
+let stockCriticalQty  = 10;    // 🚨 حرج مخزون
+let currentPage = 1;
+const pageSize = 20;
+let totalProducts = 0;
+let currentFilter = '';
+let currentFamilyFilter = '';
+let currentStockFilter = '';
+let movementLogs = [];
+let expiryTabFilter  = 'all';  // فلتر تبويب الصلاحية
+let batchActionState = {};    // حالة modal إجراء الدفعة الحالية
+
+// ============================================================
+//  التهيئة
+// ============================================================
+async function init() {
+  // التحقق من الصلاحية
+  if (!window.sessionManager.requireRole(['admin', 'manager'])) return;
+  
+  // تهيئة التطبيق
+  await window.initApp();
+  
+  // إخفاء الإشعارات في صفحات الإدارة
+  const _bell = document.getElementById('_notifBell');
+  if (_bell) _bell.remove();
+  
+  // تحميل البيانات
+  await loadData();
+  
+  // تحديث الواجهة
+  await updateAlerts();
+  await loadFamiliesSelect();
+  await loadProducts();
+  // شريط التنبيه الذكي
+  updateAlertBanner();
+  
+  // تهيئة الأحداث
+  initKeyboardShortcuts();
+
+  // ── تحديثات آنية: إعادة تحميل المخزون عند أي تغيير ──────────
+  const _rtInvReload = _debounce(async () => {
+    await loadData();
+    await loadProducts();
+    await updateAlerts();
+    updateAlertBanner();
+  }, 400);
+  window.realtimeManager?.subscribe(
+    ['products', 'families', 'productBatches'],
+    _rtInvReload
+  );
+
+  console.log('✅ صفحة المخزون جاهزة');
+}
+
+// ============================================================
+//  تحميل البيانات
+// ============================================================
+async function loadData() {
+  allFamilies = await window.dbManager.getAll('families');
+  allProducts = await window.dbManager.getAll('products');
+  totalProducts = allProducts.length;
+
+  // تحميل الدفعات والإعدادات
+  allBatches = await window.dbManager.getAll('productBatches');
+  // قراءة كل الحدود من الإعدادات (Single Source of Truth)
+  expiryAlertDays    = parseInt(await window.getSetting('expiryAlertDays'))    || 30;
+  expiryWatchDays    = parseInt(await window.getSetting('expiryWatchDays'))    || 45;
+  expiryWarningDays  = parseInt(await window.getSetting('expiryWarningDays'))  || 30;
+  expiryCriticalDays = parseInt(await window.getSetting('expiryCriticalDays')) || 15;
+  stockWatchQty      = parseInt(await window.getSetting('stockWatchQty'))      || 20;
+  stockWarningQty    = parseInt(await window.getSetting('stockWarningQty'))    || 15;
+  stockCriticalQty   = parseInt(await window.getSetting('stockCriticalQty'))   || 10;
+
+  // ترتيب المنتجات
+  allProducts.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// ============================================================
+//  بطاقات التنبيهات
+// ============================================================
+async function updateAlerts() {
+  const lowStockThreshold = parseInt(await window.getSetting('lowStockAlert')) || 5;
+
+  // 4 مستويات المخزون
+  const outStock      = allProducts.filter(p => p.quantity === 0).length;
+  const criticalStock = allProducts.filter(p => p.quantity > 0 && p.quantity <= stockCriticalQty).length;
+  const warningStock  = allProducts.filter(p => p.quantity > stockCriticalQty && p.quantity <= stockWarningQty).length;
+  const watchStock    = allProducts.filter(p => p.quantity > stockWarningQty  && p.quantity <= stockWatchQty).length;
+  const lowStock      = criticalStock; // للتوافق
+
+  // حساب الدفعات من productBatches (مع fallback للمنتجات القديمة)
+  const activeBatches = allBatches.filter(b => (b.quantity || 0) > 0 && b.expiryDate);
+
+  // دمج: دفعات جديدة + منتجات قديمة ليس لها دفعة
+  const oldStyleProducts = allProducts.filter(p =>
+    p.expiryDate && !allBatches.some(b => b.productId === p.id)
+  );
+
+  const allExpiryItems = [
+    ...activeBatches.map(b => ({ expiryDate: b.expiryDate })),
+    ...oldStyleProducts.map(p => ({ expiryDate: p.expiryDate }))
+  ];
+
+  // 4 مستويات الصلاحية مربوطة بالإعدادات
+  const expired  = allExpiryItems.filter(x => window.dateUtils.daysBetween(x.expiryDate) >= 0).length;
+  const expCrit  = allExpiryItems.filter(x => {
+    const d = window.dateUtils.daysBetween(x.expiryDate);
+    return d < 0 && d >= -expiryCriticalDays;
+  }).length;
+  const expWarn  = allExpiryItems.filter(x => {
+    const d = window.dateUtils.daysBetween(x.expiryDate);
+    return d < -expiryCriticalDays && d >= -expiryWarningDays;
+  }).length;
+  const expWatch = allExpiryItems.filter(x => {
+    const d = window.dateUtils.daysBetween(x.expiryDate);
+    return d < -expiryWarningDays && d >= -expiryWatchDays;
+  }).length;
+
+  document.getElementById('alertsGrid').innerHTML = `
+    <!-- ── نافد المخزون ── -->
+    <div class="alert-card ${criticalStock > 0 ? 'danger' : 'warning'}" onclick="loadProducts()">
+      <div class="alert-card-head">
+        <div class="alert-icon ${criticalStock > 0 ? 'danger' : 'warning'}">
+          <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+        <div class="alert-title">نافد المخزون</div>
+      </div>
+      <div class="alert-value" style="color:${criticalStock > 0 ? 'var(--danger)' : 'var(--warning)'};">${outStock}</div>
+      <div class="alert-levels">
+        <span class="alert-level-badge crit">🚨 ${criticalStock} حرج</span>
+        <span class="alert-level-badge warn">⚠️ ${warningStock} تحذير</span>
+        <span class="alert-level-badge watch">🔵 ${watchStock} تنبيه</span>
+      </div>
+    </div>
+
+    <!-- ── منتهية الصلاحية ── -->
+    <div class="alert-card danger" onclick="switchTab('expiry')">
+      <div class="alert-card-head">
+        <div class="alert-icon danger">
+          <i class="fa-solid fa-calendar-xmark"></i>
+        </div>
+        <div class="alert-title">منتهية الصلاحية</div>
+      </div>
+      <div class="alert-value" style="color:var(--danger);">${expired}</div>
+      <div class="alert-levels">
+        <span class="alert-level-badge crit">⛔ منتهية الصلاحية</span>
+      </div>
+    </div>
+
+    <!-- ── تنبيهات الصلاحية ── -->
+    <div class="alert-card warning" onclick="switchTab('expiry')">
+      <div class="alert-card-head">
+        <div class="alert-icon warning" style="background:rgba(234,88,12,0.15);color:#ea580c;">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+        <div class="alert-title">تنبيهات الصلاحية</div>
+      </div>
+      <div class="alert-value" style="color:#ea580c;">${expCrit + expWarn + expWatch}</div>
+      <div class="alert-levels">
+        <span class="alert-level-badge crit">🚨 ${expCrit} حرج</span>
+        <span class="alert-level-badge warn">⚠️ ${expWarn} تحذير</span>
+        <span class="alert-level-badge watch">🟡 ${expWatch} تنبيه</span>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+//  التبويبات
+// ============================================================
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-modern').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  
+  document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+  document.getElementById(`tab-${tabId}`).classList.add('active');
+  
+  if (tabId === 'all') {
+    loadProducts();
+  } else if (tabId === 'families') {
+    renderFamilies();
+  } else if (tabId === 'adjust') {
+    loadAdjustProducts();
+    loadMovementLog();
+  } else if (tabId === 'expiry') {
+    loadExpiryTab();
+  }
+  window.SoundManager?.play('nav-tab');
+}
+
+// ============================================================
+//  عرض المنتجات مع Pagination
+// ============================================================
+async function loadProducts() {
+  const searchQuery = document.getElementById('productSearch')?.value.toLowerCase() || '';
+  const familyFilter = document.getElementById('familyFilter')?.value || '';
+  const stockFilter = document.getElementById('stockFilter')?.value || '';
+  
+  // تطبيق الفلاتر
+  let filtered = allProducts;
+  
+  if (searchQuery) {
+    filtered = filtered.filter(p => 
+      p.name.toLowerCase().includes(searchQuery) || 
+      (p.barcode && p.barcode.includes(searchQuery))
+    );
+  }
+  
+  if (familyFilter) {
+    filtered = filtered.filter(p => p.familyId == familyFilter);
+  }
+  
+  if (stockFilter) {
+    const lowStock = parseInt(document.getElementById('lowStockAlert')?.value) || 5;
+    const now = new Date();
+    const expiryDays = parseInt(document.getElementById('expiryAlertDays')?.value) || 30;
+    
+    filtered = filtered.filter(p => {
+      if (stockFilter === 'low') return p.quantity > 0 && p.quantity <= lowStock;
+      if (stockFilter === 'out') return p.quantity === 0;
+      if (stockFilter === 'expiring') {
+        if (!p.expiryDate) return false;
+        const daysSince = window.dateUtils.daysBetween(p.expiryDate);
+        return daysSince < 0 && daysSince >= -expiryDays;
+      }
+      return true;
+    });
+  }
+  
+  totalProducts = filtered.length;
+  const start = (currentPage - 1) * pageSize;
+  const pageProducts = filtered.slice(start, start + pageSize);
+  
+  renderProducts(pageProducts);
+  updatePagination();
+}
+
+function renderProducts(products) {
+  const tbody = document.getElementById('productsTbody');
+  
+  if (products.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align:center; padding:50px;">
+          <i class="fa-solid fa-box-open" style="font-size:3rem; opacity:0.3;"></i>
+          <p style="margin-top:15px;">لا توجد منتجات</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = products.map((p, index) => {
+    const family = allFamilies.find(f => f.id === p.familyId);
+    const start = (currentPage - 1) * pageSize;
+    const rowNumber = start + index + 1;
+    
+    // حالة المخزون — 4 مستويات مربوطة بالإعدادات
+    let stockClass = 'stock-high';
+    let stockIcon  = '';
+    if (p.quantity === 0) {
+      stockClass = 'stock-low';
+      stockIcon  = ' ⛔';
+    } else if (p.quantity <= stockCriticalQty) {
+      stockClass = 'stock-critical';
+      stockIcon  = ' 🚨';
+    } else if (p.quantity <= stockWarningQty) {
+      stockClass = 'stock-warning';
+      stockIcon  = ' ⚠️';
+    } else if (p.quantity <= stockWatchQty) {
+      stockClass = 'stock-watch';
+      stockIcon  = ' 🟡';
+    }
+    
+    // حالة الصلاحية — نأخذ أخطر دفعة لهذا المنتج من productBatches
+    let expiryClass = 'expiry-ok';
+    let expiryText  = '—';
+
+    // جمع دفعات هذا المنتج ذات الكمية الموجبة فقط
+    const pBatches = allBatches.filter(b => b.productId === p.id && (b.quantity || 0) > 0);
+
+    if (pBatches.length > 0) {
+      // نختار الدفعة الأقرب للانتهاء (FEFO)
+      const nearest = pBatches
+        .filter(b => b.expiryDate)
+        .sort((a, b) => a.expiryDate.localeCompare(b.expiryDate))[0];
+
+      if (nearest) {
+        const daysSince = window.dateUtils.daysBetween(nearest.expiryDate);
+        expiryText = window.dateUtils.formatDate(nearest.expiryDate);
+        // 4 مستويات مربوطة بالإعدادات
+        if (daysSince >= 0) {
+          expiryClass = 'expiry-danger';
+          expiryText  += ' ⛔ منتهي';
+        } else if (daysSince >= -expiryCriticalDays) {
+          expiryClass = 'expiry-critical';
+          expiryText  += ` 🚨 ${-daysSince} يوم`;
+        } else if (daysSince >= -expiryWarningDays) {
+          expiryClass = 'expiry-warning';
+          expiryText  += ` ⚠️ ${-daysSince} يوم`;
+        } else if (daysSince >= -expiryWatchDays) {
+          expiryClass = 'expiry-warning';
+          expiryText  += ` 🟡 ${-daysSince} يوم`;
+        }
+        if (pBatches.filter(b => b.expiryDate).length > 1) {
+          expiryText += ` [${pBatches.filter(b => b.expiryDate).length} دفعات]`;
+        }
+      }
+    } else if (p.expiryDate) {
+      // fallback: المنتجات القديمة
+      const daysSince = window.dateUtils.daysBetween(p.expiryDate);
+      expiryText = window.dateUtils.formatDate(p.expiryDate);
+      if (daysSince >= 0) {
+        expiryClass = 'expiry-danger';
+        expiryText  += ' ⛔ منتهي';
+      } else if (daysSince >= -expiryCriticalDays) {
+        expiryClass = 'expiry-critical';
+        expiryText  += ` 🚨 ${-daysSince} يوم`;
+      } else if (daysSince >= -expiryWarningDays) {
+        expiryClass = 'expiry-warning';
+        expiryText  += ` ⚠️ ${-daysSince} يوم`;
+      } else if (daysSince >= -expiryWatchDays) {
+        expiryClass = 'expiry-warning';
+        expiryText  += ` 🟡 ${-daysSince} يوم`;
+      }
+    }
+    
+    return `
+      <tr class="${p.quantity === 0 ? 'out-stock' :
+                  p.quantity <= stockCriticalQty ? 'low-stock' :
+                  p.quantity <= stockWarningQty  ? 'low-stock' : ''}">
+        <td style="color:var(--text-secondary); font-weight:600;">${rowNumber}</td>
+        <td>
+          <div style="font-weight:800;">${window.sanitizer.escape(p.name)}</div>
+          ${p.size ? `<div style="font-size:0.75rem; color:var(--text-secondary);">${window.sanitizer.escape(p.size)}</div>` : ''}
+          ${p.barcode ? `<div style="font-size:0.7rem; color:var(--primary-light);">${p.barcode}</div>` : ''}
+        </td>
+        <td>${family ? family.name : '—'}</td>
+        <td>${p.unit || 'قطعة'}</td>
+        <td style="color:#60a5fa;">${p.buyPrice ? window.currencyFormatter.formatWithoutSymbol(p.buyPrice) : '—'}</td>
+        <td style="color:var(--primary-light); font-weight:800;">${window.currencyFormatter.formatWithoutSymbol(p.sellPrice)}</td>
+        <td>
+          <span class="stock-badge ${stockClass}">${p.quantity}${stockIcon}</span>
+        </td>
+        <td>
+          <span class="expiry-badge ${expiryClass}">${expiryText}</span>
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button class="action-btn print" onclick="printProductBarcode(${p.id})" title="طباعة باركود">
+              <i class="fa-solid fa-barcode"></i>
+            </button>
+            <button class="action-btn" onclick="editProduct(${p.id})" title="تعديل">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="action-btn delete" onclick="deleteProduct(${p.id})" title="حذف">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterProducts() {
+  currentPage = 1;
+  loadProducts();
+}
+
+function updatePagination() {
+  const totalPages = Math.ceil(totalProducts / pageSize);
+  const prevBtn = document.getElementById('prevPage');
+  const nextBtn = document.getElementById('nextPage');
+  const pageNumbers = document.getElementById('pageNumbers');
+  const info = document.getElementById('paginationInfo');
+  
+  prevBtn.disabled = currentPage === 1;
+  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+  
+  info.textContent = `صفحة ${currentPage} من ${totalPages || 1}`;
+  
+  // إنشاء أرقام الصفحات
+  let pages = '';
+  const maxVisible = 5;
+  let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let end = Math.min(totalPages, start + maxVisible - 1);
+  
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  
+  for (let i = start; i <= end; i++) {
+    pages += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  
+  pageNumbers.innerHTML = pages;
+}
+
+function goToPage(page) {
+  currentPage = page;
+  loadProducts();
+}
+
+function changePage(delta) {
+  currentPage += delta;
+  loadProducts();
+}
+
+// ============================================================
+//  إضافة/تعديل المنتج
+// ============================================================
+function clearProductForm() {
+  document.getElementById('editProductId').value = '';
+  document.getElementById('productName').value = '';
+  document.getElementById('productSize').value = '';
+  document.getElementById('productBarcode').value = '';
+  document.getElementById('productBuyPrice').value = '';
+  document.getElementById('productSellPrice').value = '';
+  document.getElementById('productQty').value = '';
+  document.getElementById('productMinStock').value = '5';
+  document.getElementById('productExpiry').value = '';
+  document.getElementById('productFamily').value = '';
+  document.getElementById('productUnit').value = 'قطعة';
+  document.getElementById('formTitle').innerHTML = 'إضافة منتج جديد';
+  document.getElementById('saveButtonText').textContent = 'حفظ المنتج';
+  document.getElementById('nameError').style.display = 'none';
+}
+
+async function saveProduct() {
+  const id = document.getElementById('editProductId').value;
+  const name = document.getElementById('productName').value.trim();
+  const familyId = parseInt(document.getElementById('productFamily').value) || null;
+  const size = document.getElementById('productSize').value.trim();
+  const unit = document.getElementById('productUnit').value;
+  const buyPrice = parseFloat(document.getElementById('productBuyPrice').value) || 0;
+  const sellPrice = parseFloat(document.getElementById('productSellPrice').value) || 0;
+  const quantity = parseInt(document.getElementById('productQty').value) || 0;
+  const minStock = parseInt(document.getElementById('productMinStock').value) || 5;
+  const expiryDate = document.getElementById('productExpiry').value || null;
+  const barcode = document.getElementById('productBarcode').value.trim();
+  
+  // التحقق من الحقول المطلوبة
+  if (!name) {
+    window.toast.show('اسم المنتج مطلوب', 'warning');
+    document.getElementById('productName').focus();
+    return;
+  }
+  
+  if (!sellPrice || sellPrice <= 0) {
+    window.toast.show('سعر البيع مطلوب', 'warning');
+    document.getElementById('productSellPrice').focus();
+    return;
+  }
+  
+  // التحقق من التكرار
+  const existing = allProducts.find(p => 
+    p.id !== parseInt(id) && 
+    p.name === name && 
+    (p.familyId || null) === familyId && 
+    (p.size || '') === size && 
+    (p.unit || '') === unit
+  );
+  
+  if (existing) {
+    document.getElementById('nameError').style.display = 'block';
+    return;
+  }
+  
+  document.getElementById('nameError').style.display = 'none';
+  
+  const product = {
+    familyId,
+    name,
+    size,
+    unit,
+    buyPrice,
+    sellPrice,
+    quantity,
+    minStock,
+    expiryDate,
+    barcode,
+    updatedAt: window.dateUtils.now()
+  };
+  
+  try {
+    if (id) {
+      // تعديل منتج موجود — العودة لقائمة الكل
+      product.id = parseInt(id);
+      await window.dbManager.put('products', product);
+      window.toast.show('تم تعديل المنتج', 'success');
+      await loadData();
+      clearProductForm();
+      switchTab('all');
+    } else {
+      // إضافة منتج جديد — البقاء في نفس التبويب لإضافة آخر
+      await window.dbManager.add('products', product);
+      window.toast.show('✅ تمت إضافة المنتج — يمكنك إضافة منتج آخر', 'success', 3000);
+      await loadData();
+      clearProductForm();
+      // نبقى في تبويب "إضافة منتج" — لا switchTab
+      document.getElementById('productName').focus();
+    }
+    
+  } catch (e) {
+    console.error('خطأ في حفظ المنتج:', e);
+    window.toast.show('فشل في حفظ المنتج', 'error');
+  }
+}
+
+async function editProduct(id) {
+  const product = allProducts.find(p => p.id === id);
+  if (!product) return;
+  
+  document.getElementById('editProductId').value = product.id;
+  document.getElementById('productName').value = product.name || '';
+  document.getElementById('productSize').value = product.size || '';
+  document.getElementById('productBarcode').value = product.barcode || '';
+  document.getElementById('productBuyPrice').value = product.buyPrice || '';
+  document.getElementById('productSellPrice').value = product.sellPrice || '';
+  document.getElementById('productQty').value = product.quantity || '';
+  document.getElementById('productMinStock').value = product.minStock || 5;
+  document.getElementById('productExpiry').value = product.expiryDate || '';
+  document.getElementById('productFamily').value = product.familyId || '';
+  document.getElementById('productUnit').value = product.unit || 'قطعة';
+  document.getElementById('formTitle').innerHTML = 'تعديل المنتج';
+  document.getElementById('saveButtonText').textContent = 'حفظ التعديلات';
+  
+  switchTab('add');
+}
+
+async function deleteProduct(id) {
+  const product = allProducts.find(p => p.id === id);
+  
+  // التحقق من وجود مبيعات مرتبطة
+  const items = await window.dbManager.getAll('saleItems', { index: 'productId', value: id });
+  
+  let message = `هل أنت متأكد من حذف "${product.name}"؟`;
+  if (items.length > 0) {
+    message = `⚠️ هذا المنتج مرتبط بـ ${items.length} عملية بيع. الحذف سيؤثر على التقارير. هل تريد المتابعة؟`;
+  }
+  
+  const confirmed = await window.modalManager.confirm(message);
+  if (!confirmed) return;
+  
+  try {
+    await window.dbManager.delete('products', id);
+    await loadData();
+    loadProducts();
+    window.toast.show('تم حذف المنتج', 'success');
+  } catch (e) {
+    window.toast.show('فشل في حذف المنتج', 'error');
+  }
+}
+
+// ============================================================
+//  العائلات
+// ============================================================
+async function loadFamiliesSelect() {
+  const select = document.getElementById('productFamily');
+  const filter = document.getElementById('familyFilter');
+  
+  if (select) {
+    select.innerHTML = '<option value="">-- بدون عائلة --</option>';
+    allFamilies.forEach(f => {
+      select.innerHTML += `<option value="${f.id}">${window.sanitizer.escape(f.name)}</option>`;
+    });
+  }
+  
+  if (filter) {
+    filter.innerHTML = '<option value="">كل العائلات</option>';
+    allFamilies.forEach(f => {
+      filter.innerHTML += `<option value="${f.id}">${window.sanitizer.escape(f.name)}</option>`;
+    });
+  }
+}
+
+function renderFamilies() {
+  const grid = document.getElementById('familiesGrid');
+  
+  if (allFamilies.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1; text-align:center; padding:50px;">
+        <i class="fa-solid fa-layer-group" style="font-size:3rem; opacity:0.3;"></i>
+        <p style="margin-top:15px;">لا توجد عائلات</p>
+      </div>
+    `;
+    return;
+  }
+  
+  grid.innerHTML = allFamilies.map(f => {
+    const count = allProducts.filter(p => p.familyId === f.id).length;
+    return `
+      <div class="family-card">
+        <div>
+          <div class="family-name">${window.sanitizer.escape(f.name)}</div>
+          <div class="family-count">${count} منتج</div>
+        </div>
+        <div class="family-actions">
+          <button class="action-btn" onclick="editFamily(${f.id})" title="تعديل">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="action-btn delete" onclick="deleteFamily(${f.id})" title="حذف">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function addFamily() {
+  const name = document.getElementById('familyInput').value.trim();
+  if (!name) {
+    window.toast.show('أدخل اسم العائلة', 'warning');
+    return;
+  }
+  
+  try {
+    await window.dbManager.add('families', { name });
+    document.getElementById('familyInput').value = '';
+    await loadData();
+    await loadFamiliesSelect();
+    renderFamilies();
+    window.toast.show('تمت إضافة العائلة', 'success');
+  } catch (e) {
+    window.toast.show('العائلة موجودة مسبقاً', 'warning');
+  }
+}
+
+async function editFamily(id) {
+  const family = allFamilies.find(f => f.id === id);
+  const newName = await window.modalManager.prompt('تعديل اسم العائلة', family.name);
+  if (newName && newName.trim()) {
+    family.name = newName.trim();
+    await window.dbManager.put('families', family);
+    await loadData();
+    await loadFamiliesSelect();
+    renderFamilies();
+    window.toast.show('تم تعديل العائلة', 'success');
+  }
+}
+
+async function deleteFamily(id) {
+  const productsCount = allProducts.filter(p => p.familyId === id).length;
+  if (productsCount > 0) {
+    window.toast.show(`لا يمكن حذف عائلة تحتوي على ${productsCount} منتج`, 'warning');
+    return;
+  }
+  
+  const confirmed = await window.modalManager.confirm('حذف هذه العائلة؟');
+  if (confirmed) {
+    await window.dbManager.delete('families', id);
+    await loadData();
+    await loadFamiliesSelect();
+    renderFamilies();
+    window.toast.show('تم حذف العائلة', 'success');
+  }
+}
+
+// ============================================================
+//  تعديل المخزون
+// ============================================================
+function loadAdjustProducts() {
+  const select = document.getElementById('adjustProduct');
+  select.innerHTML = '<option value="">-- اختر منتجاً --</option>';
+  
+  allProducts.forEach(p => {
+    select.innerHTML += `<option value="${p.id}">${window.sanitizer.escape(p.name)} (${p.quantity})</option>`;
+  });
+  
+  const logFilter = document.getElementById('logFilter');
+  logFilter.innerHTML = '<option value="0">كل المنتجات</option>';
+  allProducts.forEach(p => {
+    logFilter.innerHTML += `<option value="${p.id}">${window.sanitizer.escape(p.name)}</option>`;
+  });
+}
+
+function updateAdjustPreview() {
+  const productId = parseInt(document.getElementById('adjustProduct').value);
+  const type = document.getElementById('adjustType').value;
+  const qty = parseInt(document.getElementById('adjustQty').value) || 0;
+  const product = allProducts.find(p => p.id === productId);
+  const preview = document.getElementById('adjustPreview');
+  const result = document.getElementById('adjustResult');
+  
+  if (!product) {
+    preview.style.display = 'block';
+    document.getElementById('currentQty').textContent = '—';
+    result.style.display = 'none';
+    return;
+  }
+  
+  document.getElementById('currentQty').textContent = product.quantity;
+  
+  if (qty > 0) {
+    let newQty = product.quantity;
+    if (type === 'add') newQty = product.quantity + qty;
+    else if (type === 'sub') newQty = Math.max(0, product.quantity - qty);
+    else if (type === 'set') newQty = qty;
+    
+    const diff = newQty - product.quantity;
+    
+    document.getElementById('newQty').textContent = newQty;
+    document.getElementById('diffDisplay').innerHTML = `
+      <span class="${diff > 0 ? 'diff-positive' : diff < 0 ? 'diff-negative' : ''}">
+        ${diff > 0 ? '+' : ''}${diff}
+      </span>
+    `;
+    
+    result.style.display = 'block';
+  } else {
+    result.style.display = 'none';
+  }
+}
+
+function toggleCustomReason() {
+  const reason = document.getElementById('adjustReason').value;
+  // حقل السبب المخصص
+  document.getElementById('customReasonGroup').style.display =
+    reason === 'آخر' ? 'block' : 'none';
+  // حقل تاريخ الصلاحية — يظهر فقط عند "استلام بضاعة"
+  document.getElementById('batchExpiryGroup').style.display =
+    reason === 'استلام بضاعة' ? 'block' : 'none';
+  // عند الإخفاء نمسح القيمة
+  if (reason !== 'استلام بضاعة') {
+    document.getElementById('batchExpiryDate').value = '';
+  }
+}
+
+async function saveAdjustment() {
+  const productId = parseInt(document.getElementById('adjustProduct').value);
+  const type = document.getElementById('adjustType').value;
+  const qty = parseInt(document.getElementById('adjustQty').value) || 0;
+  let reason = document.getElementById('adjustReason').value;
+  
+  if (reason === 'آخر') {
+    reason = document.getElementById('customReason').value.trim();
+  }
+  
+  if (!productId) {
+    window.toast.show('اختر منتجاً', 'warning');
+    return;
+  }
+  
+  if (qty <= 0) {
+    window.toast.show('أدخل كمية صحيحة', 'warning');
+    return;
+  }
+  
+  if (!reason) {
+    window.toast.show('السبب مطلوب', 'warning');
+    return;
+  }
+  
+  const product = await window.dbManager.get('products', productId);
+  if (!product) return;
+  
+  const oldQty = product.quantity;
+  let newQty = oldQty;
+  
+  if (type === 'add') newQty = oldQty + qty;
+  else if (type === 'sub') newQty = Math.max(0, oldQty - qty);
+  else if (type === 'set') newQty = qty;
+  
+  // تسجيل الحركة
+  const user = window.sessionManager.getUser();
+  await window.dbManager.add('logs', {
+    action: 'stock_adjust',
+    productId,
+    productName: product.name,
+    type,
+    reason,
+    oldQty,
+    newQty,
+    diff: newQty - oldQty,
+    userId: user?.id,
+    date: window.dateUtils.now()
+  });
+  
+  // تحديث المنتج
+  product.quantity = newQty;
+  await window.dbManager.put('products', product);
+
+  // ── إذا كان السبب "استلام بضاعة" نحفظ دفعة جديدة ──
+  const rawReason = document.getElementById('adjustReason').value;
+  if (rawReason === 'استلام بضاعة' && type === 'add') {
+    const expiryVal = document.getElementById('batchExpiryDate').value || null;
+    await window.dbManager.add('productBatches', {
+      productId:    productId,
+      productName:  product.name,
+      quantity:     qty,
+      expiryDate:   expiryVal,
+      receivedDate: window.dateUtils.today(),
+      note:         'استلام بضاعة'
+    });
+  }
+
+  window.toast.show(`✅ تم تعديل ${product.name}: ${oldQty} → ${newQty}`, 'success');
+
+  // إعادة تحميل البيانات
+  await loadData();
+  loadAdjustProducts();
+  loadMovementLog();
+  await updateAlerts();
+
+  // إعادة تعيين الحقول
+  document.getElementById('adjustProduct').value  = '';
+  document.getElementById('adjustQty').value      = '';
+  document.getElementById('batchExpiryDate').value = '';
+  document.getElementById('adjustResult').style.display      = 'none';
+  document.getElementById('customReasonGroup').style.display = 'none';
+  document.getElementById('batchExpiryGroup').style.display  = 'none';
+}
+
+async function loadMovementLog() {
+  const filterProduct = parseInt(document.getElementById('logFilter').value) || 0;
+  const logs = await window.dbManager.getAll('logs');
+  
+  movementLogs = logs
+    .filter(l => l.action === 'stock_adjust')
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 50);
+  
+  if (filterProduct > 0) {
+    movementLogs = movementLogs.filter(l => l.productId === filterProduct);
+  }
+  
+  const tbody = document.getElementById('logTbody');
+  
+  if (movementLogs.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align:center; padding:30px;">
+          <i class="fa-solid fa-clock" style="font-size:2rem; opacity:0.3;"></i>
+          <p style="margin-top:10px;">لا توجد حركات مسجلة</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = movementLogs.map(log => {
+    const diff = log.diff;
+    const diffClass = diff > 0 ? 'diff-positive' : diff < 0 ? 'diff-negative' : '';
+    const diffSign = diff > 0 ? '+' : '';
+    
+    return `
+      <tr>
+        <td>${window.dateUtils.formatDateTime(log.date)}</td>
+        <td>${window.sanitizer.escape(log.productName)}</td>
+        <td>
+          ${log.type === 'add' ? '➕ إضافة' : 
+            log.type === 'sub' ? '➖ خصم' : '📌 تعيين'}
+        </td>
+        <td class="${diffClass}">${diffSign}${diff}</td>
+        <td>${window.sanitizer.escape(log.reason)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ============================================================
+//  طباعة الباركود
+// ============================================================
+function printProductBarcode(productId) {
+  const product = allProducts.find(p => p.id === productId);
+  if (!product) return;
+  
+  // استخدام print.js
+  if (typeof POSDZ_PRINT !== 'undefined') {
+    POSDZ_PRINT.barcode(product, 1);
+  } else {
+    window.toast.show('وحدة الطباعة غير متوفرة', 'warning');
+  }
+}
+
+function printBarcodeBatch() {
+  const select = document.getElementById('barcodeProduct');
+  select.innerHTML = '<option value="">اختر منتجاً</option>';
+  
+  allProducts.forEach(p => {
+    if (p.barcode) {
+      select.innerHTML += `<option value="${p.id}">${window.sanitizer.escape(p.name)}</option>`;
+    }
+  });
+  
+  document.getElementById('barcodeCopies').value = '1';
+  window.modalManager.open('barcodePrintModal');
+}
+
+function printSelectedBarcode() {
+  const productId = parseInt(document.getElementById('barcodeProduct').value);
+  const copies = parseInt(document.getElementById('barcodeCopies').value) || 1;
+  const product = allProducts.find(p => p.id === productId);
+  
+  if (!product) {
+    window.toast.show('اختر منتجاً', 'warning');
+    return;
+  }
+  
+  if (typeof POSDZ_PRINT !== 'undefined') {
+    POSDZ_PRINT.barcode(product, copies);
+    window.modalManager.close('barcodePrintModal');
+  }
+}
+
+// ============================================================
+//  استيراد/تصدير
+// ============================================================
+let importData = [];
+
+async function handleImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  // إظهار شريط التقدم
+  document.getElementById('importProgress').style.display = 'block';
+  document.getElementById('importBar').style.width = '0%';
+  document.getElementById('importPercent').textContent = '0%';
+  
+  try {
+    const text = await file.text();
+    const lines = text.split('\n').filter(l => l.trim());
+    
+    if (lines.length < 2) {
+      window.toast.show('الملف فارغ أو غير صالح', 'error');
+      return;
+    }
+    
+    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+    const required = ['name', 'sell_price'];
+    const missing = required.filter(r => !headers.includes(r));
+    
+    if (missing.length > 0) {
+      window.toast.show(`الأعمدة المطلوبة مفقودة: ${missing.join(', ')}`, 'error');
+      return;
+    }
+    
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+      const row = {};
+      headers.forEach((h, idx) => {
+        row[h] = values[idx] || '';
+      });
+      data.push(row);
+      
+      // تحديث شريط التقدم
+      const percent = Math.floor((i / lines.length) * 100);
+      document.getElementById('importBar').style.width = percent + '%';
+      document.getElementById('importPercent').textContent = percent + '%';
+    }
+    
+    importData = data;
+    
+    // التحقق من التكرارات
+    const conflicts = data.filter(row => 
+      allProducts.some(p => p.name === row.name)
+    );
+    
+    if (conflicts.length > 0) {
+      document.getElementById('importConflicts').innerHTML = `
+        <div style="background:rgba(245,158,11,0.1); border-radius:8px; padding:12px; margin-bottom:10px;">
+          <i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i>
+          <span style="margin-right:8px;">تم العثور على ${conflicts.length} منتج مكرر</span>
+        </div>
+        <div style="max-height:200px; overflow-y:auto;">
+          ${conflicts.slice(0, 10).map(c => 
+            `<div style="padding:5px; border-bottom:1px solid var(--border);">${window.sanitizer.escape(c.name)}</div>`
+          ).join('')}
+          ${conflicts.length > 10 ? `<div style="padding:5px;">و ${conflicts.length - 10} آخرون...</div>` : ''}
+        </div>
+      `;
+      window.modalManager.open('importConfirmModal');
+    } else {
+      await processImport(data, false);
+    }
+    
+  } catch (e) {
+    console.error('خطأ في الاستيراد:', e);
+    window.toast.show('فشل في قراءة الملف', 'error');
+  } finally {
+    document.getElementById('importProgress').style.display = 'none';
+    input.value = '';
+  }
+}
+
+async function confirmImport(updateExisting) {
+  window.modalManager.close('importConfirmModal');
+  await processImport(importData, updateExisting);
+}
+
+async function processImport(data, updateExisting) {
+  let added = 0;
+  let updated = 0;
+  let skipped = 0;
+  
+  for (const row of data) {
+    if (!row.name) continue;
+    
+    // البحث عن العائلة
+    let familyId = null;
+    if (row.family) {
+      let family = allFamilies.find(f => f.name === row.family);
+      if (!family) {
+        familyId = await window.dbManager.add('families', { name: row.family });
+        allFamilies = await window.dbManager.getAll('families');
+      } else {
+        familyId = family.id;
+      }
+    }
+    
+    const existing = allProducts.find(p => p.name === row.name);
+    
+    const product = {
+      familyId,
+      name: row.name,
+      size: row.size || '',
+      unit: row.unit || 'قطعة',
+      buyPrice: parseFloat(row.buy_price) || 0,
+      sellPrice: parseFloat(row.sell_price) || 0,
+      quantity: parseInt(row.quantity) || 0,
+      minStock: parseInt(row.min_stock) || 5,
+      expiryDate: row.expiry_date || null,
+      barcode: row.barcode || '',
+      updatedAt: window.dateUtils.now()
+    };
+    
+    if (existing) {
+      if (updateExisting) {
+        product.id = existing.id;
+        await window.dbManager.put('products', product);
+        updated++;
+      } else {
+        skipped++;
+      }
+    } else {
+      await window.dbManager.add('products', product);
+      added++;
+    }
+  }
+  
+  await loadData();
+  loadProducts();
+  
+  window.toast.show(`✅ تمت الإضافة: ${added} | تم التحديث: ${updated} | تم التجاهل: ${skipped}`, 'success');
+}
+
+function exportProducts() {
+  const data = allProducts.map(p => ({
+    name: p.name,
+    size: p.size || '',
+    unit: p.unit || 'قطعة',
+    family: allFamilies.find(f => f.id === p.familyId)?.name || '',
+    buy_price: p.buyPrice || 0,
+    sell_price: p.sellPrice,
+    quantity: p.quantity,
+    min_stock: p.minStock || 5,
+    expiry_date: p.expiryDate || '',
+    barcode: p.barcode || ''
+  }));
+  
+  const headers = ['name', 'size', 'unit', 'family', 'buy_price', 'sell_price', 'quantity', 'min_stock', 'expiry_date', 'barcode'];
+  const csv = [
+    headers.join(','),
+    ...data.map(row => headers.map(h => `"${row[h] || ''}"`).join(','))
+  ].join('\n');
+  
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `products_${window.dateUtils.today()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCurrentPage() {
+  // تصدير الصفحة الحالية فقط
+  const start = (currentPage - 1) * pageSize;
+  const pageProducts = allProducts.slice(start, start + pageSize);
+  
+  const data = pageProducts.map(p => ({
+    name: p.name,
+    size: p.size || '',
+    unit: p.unit || 'قطعة',
+    family: allFamilies.find(f => f.id === p.familyId)?.name || '',
+    buy_price: p.buyPrice || 0,
+    sell_price: p.sellPrice,
+    quantity: p.quantity,
+    expiry_date: p.expiryDate || '',
+    barcode: p.barcode || ''
+  }));
+  
+  const headers = ['name', 'size', 'unit', 'family', 'buy_price', 'sell_price', 'quantity', 'expiry_date', 'barcode'];
+  const csv = [
+    headers.join(','),
+    ...data.map(row => headers.map(h => `"${row[h] || ''}"`).join(','))
+  ].join('\n');
+  
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `products_page${currentPage}_${window.dateUtils.today()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadTemplate() {
+  const headers = ['name', 'size', 'unit', 'family', 'buy_price', 'sell_price', 'quantity', 'min_stock', 'expiry_date', 'barcode'];
+  const example = [
+    'سكر ابيض', '1كغ', 'كيس', 'مواد غذائية', '120', '150', '50', '10', '2026-12-31', '123456789'
+  ];
+  
+  const csv = [
+    headers.join(','),
+    example.map(v => `"${v}"`).join(',')
+  ].join('\n');
+  
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'products_template.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================
+//  اختصارات لوحة المفاتيح
+// ============================================================
+function initKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      if (e.key === 'Escape') e.target.blur();
+      return;
+    }
+    
+    switch (e.key) {
+      case 'F2':
+        e.preventDefault();
+        switchTab('add');
+        break;
+      case 'F3':
+        e.preventDefault();
+        switchTab('families');
+        break;
+      case 'F4':
+        e.preventDefault();
+        switchTab('adjust');
+        break;
+      case 'F5':
+        e.preventDefault();
+        switchTab('import');
+        break;
+      case 'Escape':
+        e.preventDefault();
+        const openModal = document.querySelector('.modal-overlay.open');
+        if (openModal) {
+          window.modalManager.close(openModal.id);
+        }
+        break;
+    }
+  });
+}
+
+// ============================================================
+//  تسجيل الخروج
+// ============================================================
+function doLogout() {
+  window.modalManager.confirm('هل تريد تسجيل الخروج؟').then(confirmed => {
+    if (confirmed) {
+      window.sessionManager.logout();
+    }
+  });
+}
+
+// ============================================================
+//  تبويب الصلاحية — ExpiryRiskEngine
+// ============================================================
+
+// تحويل EXPIRY_LEVELS إلى CSS class للـ badge
+function _levelToCls(levelId) {
+  const map = {
+    EXPIRED:  'expiry-danger',
+    CRITICAL: 'expiry-critical',
+    WARNING:  'expiry-warning',
+    WATCH:    'expiry-warning',
+    SAFE:     'expiry-ok',
+  };
+  return map[levelId] || 'expiry-ok';
+}
+
+async function loadExpiryTab() {
+  const tbody = document.getElementById('expiryTbody');
+  if (!tbody) return;
+
+  // إظهار مؤشر التحميل
+  tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;">
+    <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;color:var(--primary);"></i>
+    <p style="margin-top:10px;color:var(--text-secondary);">جاري تحليل بيانات المبيعات...</p>
+  </td></tr>`;
+
+  // ── استدعاء ExpiryRiskEngine ────────────────────────────
+  const results = await window.ExpiryRiskEngine.analyze();
+  const summary = window.ExpiryRiskEngine.summarize(results);
+  const fmt     = window.currencyFormatter.format.bind(window.currencyFormatter);
+
+  // ── تحديث بطاقات الملخص ────────────────────────────────
+  const s = id => document.getElementById(id);
+  if (s('expSumExpired')) {
+    s('expSumExpired').textContent = summary.expired.length;
+    if (s('expSumExpiredLoss'))
+      s('expSumExpiredLoss').textContent =
+        summary.expiredLoss > 0 ? `خسارة: ${fmt(summary.expiredLoss)}` : '';
+  }
+  if (s('expSumCritical')) {
+    s('expSumCritical').textContent = summary.critical.length;
+    const critLoss = summary.critical.reduce((a, r) => a + r.lossAmount, 0);
+    if (s('expSumCriticalLoss'))
+      s('expSumCriticalLoss').textContent =
+        critLoss > 0 ? `خطر: ${fmt(critLoss)}` : '';
+  }
+  if (s('expSumWarning')) {
+    s('expSumWarning').textContent = summary.totalLoss > 0 ? fmt(summary.totalLoss) : '0 DA';
+    if (s('expSumTotalLoss')) s('expSumTotalLoss').textContent = '';
+  }
+
+  // ── تطبيق الفلتر ───────────────────────────────────────
+  const filtered = results.filter(r => {
+    if (expiryTabFilter === 'all')      return r.level.id !== 'SAFE';
+    if (expiryTabFilter === 'expired')  return r.level.id === 'EXPIRED';
+    if (expiryTabFilter === 'critical') return r.level.id === 'CRITICAL';
+    if (expiryTabFilter === 'warning')
+      return r.level.id === 'WARNING' || r.level.id === 'WATCH';
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" style="text-align:center; padding:50px; color:var(--text-secondary);">
+          <i class="fa-solid fa-circle-check"
+             style="font-size:2.5rem; color:var(--success); opacity:0.7;"></i>
+          <p style="margin-top:14px; font-weight:800; font-size:1rem;">
+            ✅ لا توجد دفعات في خطر
+          </p>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  const fmt2 = n => n > 0 ? fmt(n) : '—';
+
+  tbody.innerHTML = filtered.map((r, idx) => {
+    const cls      = _levelToCls(r.level.id);
+    const daysText = r.daysLeft >= 0
+      ? `<span style="color:var(--danger); font-weight:900;">منتهي منذ ${r.daysLeft} يوم</span>`
+      : `<span style="font-weight:800;">${r.daysLeft * -1} يوم</span>`;
+
+    const riskText = r.atRiskQty > 0
+      ? `<span class="risk-loss-badge">${r.atRiskQty.toFixed(0)} وحدة</span>`
+      : `<span style="color:var(--success); font-size:0.8rem; font-weight:700;">آمن ✅</span>`;
+
+    const lossText = r.lossAmount > 0
+      ? `<span class="risk-loss-badge">${fmt(r.lossAmount)}</span>`
+      : '—';
+
+    const rateText = r.dailyRate > 0
+      ? `<span class="risk-rate-badge">${r.dailyRate}/يوم</span>`
+      : '';
+
+    const batchBadge = r.batch
+      ? `<span class="batch-num">دفعة #${r.batch.id}</span>`
+      : `<span class="batch-num" style="background:rgba(99,102,241,0.1);color:#818cf8;">قديم</span>`;
+
+    // أزرار الإجراء حسب المستوى
+    let actionBtns = '';
+    if (r.level.id === 'EXPIRED') {
+      actionBtns = `
+        <button class="action-panel-btn writeoff"
+                onclick="openBatchAction('writeoff', ${JSON.stringify(idx)})">
+          <i class="fa-solid fa-trash-can"></i> شطب
+        </button>`;
+    } else if (r.level.id === 'CRITICAL' || r.level.id === 'WARNING') {
+      actionBtns = `
+        <button class="action-panel-btn discount"
+                onclick="openBatchAction('discount', ${idx})">
+          <i class="fa-solid fa-tag"></i> خصم
+        </button>
+        <button class="action-panel-btn writeoff"
+                onclick="openBatchAction('writeoff', ${idx})">
+          <i class="fa-solid fa-trash-can"></i> شطب
+        </button>`;
+    } else if (r.level.id === 'WATCH') {
+      actionBtns = `
+        <button class="action-panel-btn discount"
+                onclick="openBatchAction('discount', ${idx})">
+          <i class="fa-solid fa-tag"></i> خصم
+        </button>`;
+    }
+
+    return `
+      <tr data-result-idx="${idx}">
+        <td style="color:var(--text-secondary); font-weight:700;">${idx + 1}</td>
+        <td>
+          <div style="font-weight:800;">${window.sanitizer.escape(r.product?.name || '—')}</div>
+          ${rateText}
+        </td>
+        <td>${batchBadge}</td>
+        <td style="font-weight:800; color:var(--primary-light);">${r.qty}</td>
+        <td style="font-weight:700;">${window.dateUtils.formatDate(r.batch?.expiryDate || r.product?.expiryDate || '')}</td>
+        <td>${daysText}</td>
+        <td>${riskText}</td>
+        <td>${lossText}</td>
+        <td><span class="expiry-badge ${cls}">${r.level.label}</span></td>
+        <td>
+          <div style="display:flex; gap:5px; flex-wrap:wrap;">${actionBtns}</div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  // حفظ النتائج للرجوع إليها من modal الإجراء
+  window._expiryResults = filtered;
+}
+
+function filterExpiryTab(filter) {
+  expiryTabFilter = filter;
+  ['all','expired','critical','warning'].forEach(f => {
+    const btn = document.getElementById(`efBtn-${f}`);
+    if (!btn) return;
+    btn.classList.toggle('btn-primary',   f === filter);
+    btn.classList.toggle('btn-secondary', f !== filter);
+  });
+  loadExpiryTab();
+}
+
+// ── فتح modal الإجراء ──────────────────────────────────────
+function openBatchAction(type, idx) {
+  const results = window._expiryResults;
+  if (!results || idx >= results.length) return;
+  const r = results[idx];
+  batchActionState = { type, result: r };
+
+  const fmt   = window.currencyFormatter.format.bind(window.currencyFormatter);
+  const pName = r.product?.name || '—';
+  const qty   = r.qty;
+  const loss  = fmt(r.lossAmount);
+  const disc  = r.suggestedDisc || 0;
+
+  // رأس المودال
+  const iconMap = { discount:'fa-tag', writeoff:'fa-trash-can' };
+  document.getElementById('batchActionTitle').innerHTML =
+    `<i class="fa-solid ${iconMap[type] || 'fa-bolt'}"></i> ` +
+    (type === 'discount' ? 'تطبيق خصم' : 'شطب الدفعة');
+
+  // جسم المودال
+  document.getElementById('batchActionBody').innerHTML = `
+    <div style="background:var(--bg-dark); border-radius:8px; padding:12px; margin-bottom:4px;">
+      <div style="font-weight:800; font-size:1rem; margin-bottom:6px;">
+        📦 ${window.sanitizer.escape(pName)}
+      </div>
+      <div style="display:flex; gap:14px; font-size:0.85rem; color:var(--text-secondary); flex-wrap:wrap;">
+        <span>الكمية: <strong style="color:var(--primary-light);">${qty}</strong></span>
+        <span>الأيام: <strong style="color:${r.daysLeft <= 0 ? 'var(--danger)' : 'var(--warning)'};">
+          ${r.daysLeft <= 0 ? 'منتهي' : r.daysLeft + ' يوم'}
+        </strong></span>
+        ${r.lossAmount > 0
+          ? `<span>الخسارة المتوقعة: <strong style="color:var(--danger);">${loss}</strong></span>`
+          : ''}
+      </div>
+    </div>`;
+
+  // إظهار/إخفاء أقسام المودال
+  document.getElementById('discountSection').style.display =
+    type === 'discount' ? 'block' : 'none';
+  document.getElementById('writeoffSection').style.display =
+    type === 'writeoff' ? 'block' : 'none';
+
+  if (type === 'discount') {
+    document.getElementById('discountPctInput').value = disc || 10;
+    previewDiscount();
+  }
+
+  if (type === 'writeoff') {
+    document.getElementById('writeoffDetail').innerHTML =
+      `سيتم شطب <strong>${qty}</strong> وحدة من "${window.sanitizer.escape(pName)}"
+       وتسجيل خسارة قدرها <strong style="color:var(--danger);">${fmt(qty * (r.product?.buyPrice||0))}</strong>
+       في المصاريف تلقائياً.`;
+  }
+
+  window.modalManager.open('batchActionModal');
+}
+
+// ── معاينة سعر ما بعد الخصم ───────────────────────────────
+function previewDiscount() {
+  const pct     = parseFloat(document.getElementById('discountPctInput').value) || 0;
+  const r       = batchActionState.result;
+  const price   = r.product?.sellPrice || 0;
+  const newPrice = price * (1 - pct / 100);
+  const fmt     = window.currencyFormatter.format.bind(window.currencyFormatter);
+  document.getElementById('discountPreview').textContent =
+    price > 0 ? `${fmt(price)} → ${fmt(newPrice)}` : '';
+}
+
+// ── تنفيذ الإجراء ──────────────────────────────────────────
+async function confirmBatchAction() {
+  const { type, result: r } = batchActionState;
+  if (!r) return;
+
+  const user    = window.sessionManager.getUser();
+  const pName   = r.product?.name || '—';
+  const fmt     = window.currencyFormatter.format.bind(window.currencyFormatter);
+
+  try {
+    if (type === 'discount') {
+      // ① قراءة نسبة الخصم
+      const pct = parseFloat(document.getElementById('discountPctInput').value) || 0;
+      if (pct <= 0 || pct >= 100) {
+        window.toast.show('أدخل نسبة خصم صحيحة بين 1 و99', 'warning');
+        return;
+      }
+      const product      = await window.dbManager.get('products', r.product.id);
+      const originalPrice = product.sellPrice;
+      const newPrice      = parseFloat((originalPrice * (1 - pct / 100)).toFixed(2));
+
+      // ② تحديث سعر المنتج
+      product.sellPrice = newPrice;
+      await window.dbManager.put('products', product);
+
+      // ③ تحديث الدفعة بالخصم
+      if (r.batch) {
+        r.batch.isDiscounted      = true;
+        r.batch.originalSellPrice = originalPrice;
+        r.batch.discountPct       = pct;
+        await window.dbManager.put('productBatches', r.batch);
+      }
+
+      // ④ تسجيل في logs
+      await window.dbManager.add('logs', {
+        action:      'expiry_discount',
+        productId:   r.product.id,
+        productName: pName,
+        batchId:     r.batch?.id || null,
+        oldPrice:    originalPrice,
+        newPrice,
+        discountPct: pct,
+        userId:      user?.id,
+        date:        window.dateUtils.now(),
+      });
+
+      window.toast.show(`✅ تم تطبيق خصم ${pct}% على "${pName}"`, 'success');
+
+    } else if (type === 'writeoff') {
+      // ① حساب الخسارة الفعلية
+      const qty      = r.qty;
+      const buyPrice = r.product?.buyPrice || 0;
+
+      // ② إنقاص الكمية من المنتج
+      if (r.product) {
+        const product = await window.dbManager.get('products', r.product.id);
+        product.quantity = Math.max(0, (product.quantity || 0) - qty);
+        await window.dbManager.put('products', product);
+      }
+
+      // ③ تحديث الدفعة
+      if (r.batch) {
+        r.batch.quantity      = 0;
+        r.batch.isWrittenOff  = true;
+        r.batch.writtenOffDate = window.dateUtils.today();
+        r.batch.writtenOffQty = qty;
+        await window.dbManager.put('productBatches', r.batch);
+      }
+
+      // ④ تسجيل الخسارة في expenses (عبر recordExpiryLoss)
+      await window.recordExpiryLoss({
+        productName: pName,
+        batchId:     r.batch?.id || null,
+        qty,
+        buyPrice,
+        note: `شطب صلاحية: ${pName} — ${qty} وحدة — ${window.dateUtils.today()}`,
+      });
+
+      // ⑤ تسجيل في logs
+      await window.dbManager.add('logs', {
+        action:      'expiry_writeoff',
+        productId:   r.product?.id,
+        productName: pName,
+        batchId:     r.batch?.id || null,
+        qty,
+        lossAmount:  qty * buyPrice,
+        userId:      user?.id,
+        date:        window.dateUtils.now(),
+      });
+
+      window.toast.show(`✅ تم شطب ${qty} وحدة من "${pName}" وتسجيل الخسارة`, 'success');
+    }
+
+    window.modalManager.close('batchActionModal');
+    await loadData();
+    await updateAlerts();
+    updateAlertBanner();
+    loadExpiryTab();
+
+  } catch (e) {
+    console.error('[confirmBatchAction]', e);
+    window.toast.show('حدث خطأ أثناء التنفيذ', 'error');
+  }
+}
+
+// ── شريط التنبيه الذكي ────────────────────────────────────
+async function updateAlertBanner() {
+  try {
+    const results = await window.ExpiryRiskEngine.analyze();
+    const summary = window.ExpiryRiskEngine.summarize(results);
+    const banner  = document.getElementById('expiryBanner');
+    const text    = document.getElementById('expiryBannerText');
+    if (!banner || !text) return;
+
+    const fmt     = window.currencyFormatter.format.bind(window.currencyFormatter);
+    const urgent  = summary.expired.length + summary.critical.length;
+
+    if (urgent === 0 && summary.totalLoss === 0) {
+      banner.classList.add('hidden');
+      return;
+    }
+
+    let msg = '';
+    if (summary.expired.length > 0)
+      msg += `⚫ ${summary.expired.length} دفعة منتهية الصلاحية  `;
+    if (summary.critical.length > 0)
+      msg += `🔴 ${summary.critical.length} دفعة حرجة (أقل 15 يوم)  `;
+    if (summary.totalLoss > 0)
+      msg += `— خسارة متوقعة: ${fmt(summary.totalLoss)}`;
+
+    text.textContent  = msg;
+    banner.classList.remove('hidden');
+  } catch (e) {
+    console.warn('[updateAlertBanner]', e);
+  }
+}
+
+// ============================================================
+//  بدء التشغيل
+// ============================================================
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

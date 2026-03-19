@@ -1,0 +1,3341 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="shortcut icon" href="favicon.svg"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HP-POS - التقارير ولوحة التحكم</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <style>
+    /* =========================================
+       تخطيط متطور للوحة التحكم
+    ========================================= */
+    .dashboard-layout {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg-dark);
+    }
+
+    /* الشريط الجانبي */
+    .dashboard-sidebar {
+      width: 240px;
+      background: var(--bg-card);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 8px;
+      margin: 4px 8px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .sidebar-item:hover {
+      background: var(--bg-medium);
+      border-color: var(--border);
+    }
+
+    .sidebar-item.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px var(--glow);
+    }
+
+    .sidebar-item.active .sidebar-icon,
+    .sidebar-item.active .sidebar-label,
+    .sidebar-item.active .sidebar-value {
+      color: #fff;
+    }
+
+    .sidebar-icon {
+      font-size: 1.6rem;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .sidebar-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .sidebar-value {
+      font-size: 0.8rem;
+      font-weight: 900;
+      color: var(--primary-light);
+      background: var(--bg-dark);
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-top: 4px;
+    }
+
+    .sidebar-item.active .sidebar-value {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* المحتوى الرئيسي */
+    .dashboard-main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    /* شريط المعلومات العلوي */
+    .info-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      margin-bottom: 20px;
+    }
+
+    .date-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .refresh-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-input);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .refresh-btn:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* بطاقات KPI المتطورة */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+    }
+
+    .kpi-card.revenue::before { background: linear-gradient(90deg, #10b981, #059669); }
+    .kpi-card.profit::before { background: linear-gradient(90deg, #7c3aed, #5b21b6); }
+    .kpi-card.expenses::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .kpi-card.debts::before { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .kpi-card.settled::before { background: linear-gradient(90deg, #10b981, #059669); }
+    .kpi-icon.settled { background: rgba(16,185,129,0.15); color: #10b981; }
+
+    .kpi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .kpi-title {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 700;
+    }
+
+    .kpi-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .kpi-icon.revenue {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .kpi-icon.profit {
+      background: rgba(124, 58, 237, 0.15);
+      color: #7c3aed;
+    }
+
+    .kpi-icon.expenses {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+
+    .kpi-icon.debts {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .kpi-value {
+      font-family: 'Impact', sans-serif;
+      font-size: 2rem;
+      color: var(--text-primary);
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .kpi-compare {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+    }
+
+    .trend-up {
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+      padding: 2px 6px;
+      border-radius: 12px;
+    }
+
+    .trend-down {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+      padding: 2px 6px;
+      border-radius: 12px;
+    }
+
+    .trend-flat {
+      color: var(--text-secondary);
+      background: var(--bg-dark);
+      padding: 2px 6px;
+      border-radius: 12px;
+    }
+
+    /* شريط التمرير السفلي (Ticker) */
+    .ticker-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 0;
+      margin-bottom: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .ticker {
+      display: flex;
+      white-space: nowrap;
+      animation: ticker 35s linear infinite;
+    }
+
+    .ticker:hover {
+      animation-play-state: paused;
+    }
+
+    @keyframes ticker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 25px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-right: 1px solid var(--border);
+    }
+
+    .ticker-item:last-child {
+      border-right: none;
+    }
+
+    .ticker-up { color: #10b981; }
+    .ticker-down { color: #ef4444; }
+    .ticker-flat { color: var(--text-secondary); }
+
+    /* أشرطة التبويب */
+    .period-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px;
+      width: fit-content;
+    }
+
+    .period-tab {
+      padding: 8px 22px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .period-tab:hover {
+      background: var(--bg-medium);
+      color: var(--text-primary);
+    }
+
+    .period-tab.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* بطاقات التحليل */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .chart-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--primary-light);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 15px;
+      font-size: 0.75rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.current { background: #7c3aed; }
+    .legend-dot.previous { background: rgba(124, 58, 237, 0.3); }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      max-height: 200px;
+    }
+
+    /* مؤشر صحة المتجر */
+    .health-meter {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .gauge {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      flex-shrink: 0;
+    }
+
+    .gauge-svg {
+      width: 120px;
+      height: 120px;
+      transform: rotate(-90deg);
+    }
+
+    .gauge-bg {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 8;
+    }
+
+    .gauge-fill {
+      fill: none;
+      stroke: #10b981;
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 283;
+      stroke-dashoffset: 283;
+      transition: stroke-dashoffset 1s ease;
+    }
+
+    .gauge-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .gauge-score {
+      font-size: 1.8rem;
+      font-weight: 900;
+      font-family: 'Impact', sans-serif;
+      line-height: 1;
+    }
+
+    .gauge-label {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+    }
+
+    .health-details {
+      flex: 1;
+    }
+
+    .health-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .health-row-label {
+      min-width: 70px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .health-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--bg-dark);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .health-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    /* تصنيف ABC */
+    .abc-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+
+    .abc-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .abc-item:last-child {
+      border-bottom: none;
+    }
+
+    .abc-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 0.8rem;
+    }
+
+    .abc-a {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+    }
+
+    .abc-b {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+    }
+
+    .abc-c {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .abc-name {
+      flex: 1;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .abc-value {
+      font-weight: 800;
+      color: var(--primary-light);
+    }
+
+    .abc-percent {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      min-width: 45px;
+      text-align: left;
+    }
+
+    /* جدول المبيعات */
+    .sales-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .sales-table th {
+      background: var(--bg-dark);
+      color: var(--text-secondary);
+      font-weight: 700;
+      padding: 12px 10px;
+      text-align: right;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .sales-table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sales-table tbody tr:hover {
+      background: rgba(124, 58, 237, 0.05);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .status-paid {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .status-settled {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+    .status-debt {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .status-partial {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+
+    /* قسم المصاريف */
+    .expenses-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-top: 20px;
+    }
+
+    .expense-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .expense-category {
+      min-width: 100px;
+      font-weight: 700;
+    }
+
+    .expense-note {
+      flex: 1;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
+
+    .expense-amount {
+      font-weight: 800;
+      color: #f59e0b;
+    }
+
+    /* شريط البحث في الأرشيف */
+    .archive-search {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .archive-search .search-box {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .date-range {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 10px;
+    }
+
+    .date-range input {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      padding: 8px 0;
+      outline: none;
+      width: 120px;
+    }
+
+    /* لوحة المحاسبة */
+    .accounting-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card-sm {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 15px;
+      text-align: center;
+    }
+
+    .stat-label-sm {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+    }
+
+    .stat-value-sm {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: var(--primary-light);
+      font-family: 'Impact', sans-serif;
+    }
+
+    /* ساعات الذروة */
+    .peak-hours-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .peak-hour-item {
+      text-align: center;
+      padding: 10px;
+      background: var(--bg-dark);
+      border-radius: var(--radius-sm);
+    }
+
+    .peak-hour {
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+    }
+
+    .peak-count {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--primary-light);
+    }
+
+    .peak-bar {
+      height: 4px;
+      background: var(--primary);
+      border-radius: 2px;
+      margin-top: 5px;
+      transition: width 0.3s;
+    }
+
+    /* ── زر الإغلاق اليومي ── */
+    .btn-daily-close {
+      background: linear-gradient(135deg, #f59e0b, #b45309);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 7px 16px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-daily-close:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+    }
+
+    /* ── ملخص الإغلاق داخل Modal ── */
+    .dc-summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 16px 20px;
+    }
+    .dc-summary-item {
+      background: var(--bg-dark);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--border);
+    }
+    .dc-summary-item.full-width {
+      grid-column: 1 / -1;
+    }
+    .dc-summary-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 700;
+    }
+    .dc-summary-value {
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--text-primary);
+    }
+    .dc-summary-value.revenue  { color: #10b981; }
+    .dc-summary-value.profit   { color: #7c3aed; }
+    .dc-summary-value.expenses { color: #f59e0b; }
+    .dc-summary-value.debts    { color: #ef4444; }
+    .dc-warn-box {
+      margin: 0 20px 16px;
+      padding: 10px 14px;
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.28);
+      border-radius: 10px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .dc-warn-box strong {
+      color: var(--primary-light);
+    }
+  </style>
+</head>
+<body>
+<div class="bg-animated"></div>
+
+<div class="dashboard-layout">
+  <!-- الهيدر -->
+  <header class="app-header" style="position:fixed; top:0; left:0; right:0; z-index:100;">
+    <button class="menu-btn" id="menuBtn">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <a href="sale.html" class="back-btn" title="واجهة البيع">
+      <i class="fa-solid fa-cash-register"></i>
+    </a>
+    
+    <span class="store-name" id="headerStoreName">جاري التحميل...</span>
+    
+    <div class="app-brand">
+      <span class="brand-title">HP-POS</span>
+      <span class="brand-clock" id="clockDisplay"></span>
+    </div>
+  </header>
+
+  <!-- الشريط الجانبي -->
+  <div class="dashboard-sidebar" style="margin-top:64px;">
+    <div class="sidebar-item active" onclick="showPanel('dashboard')" id="menu-dashboard">
+      <div class="sidebar-icon"><i class="fa-solid fa-chart-pie"></i></div>
+      <div class="sidebar-label">لوحة التحكم</div>
+    </div>
+    
+    <div class="sidebar-item" onclick="showPanel('daily')" id="menu-daily">
+      <div class="sidebar-icon"><i class="fa-solid fa-calendar-day"></i></div>
+      <div class="sidebar-label">المداخيل اليومية</div>
+      <div class="sidebar-value" id="dailyValue">0</div>
+    </div>
+    
+    <div class="sidebar-item" onclick="showPanel('debts')" id="menu-debts">
+      <div class="sidebar-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+      <div class="sidebar-label">الديون</div>
+      <div class="sidebar-value" id="debtsValue">0</div>
+    </div>
+    
+    <div class="sidebar-item" onclick="showPanel('families')" id="menu-families">
+      <div class="sidebar-icon"><i class="fa-solid fa-layer-group"></i></div>
+      <div class="sidebar-label">العائلات</div>
+    </div>
+    
+    <div class="sidebar-item" onclick="showPanel('products')" id="menu-products">
+      <div class="sidebar-icon"><i class="fa-solid fa-box"></i></div>
+      <div class="sidebar-label">المنتجات</div>
+    </div>
+    
+    <div class="sidebar-item" onclick="showPanel('accounting')" id="menu-accounting">
+      <div class="sidebar-icon"><i class="fa-solid fa-calculator"></i></div>
+      <div class="sidebar-label">المحاسبة</div>
+    </div>
+    
+    <div class="sidebar-item" onclick="showPanel('archive')" id="menu-archive">
+      <div class="sidebar-icon"><i class="fa-solid fa-box-archive"></i></div>
+      <div class="sidebar-label">الأرشيف</div>
+    </div>
+    
+    <div class="sidebar-item" onclick="showPanel('peakHours')" id="menu-peak">
+      <div class="sidebar-icon"><i class="fa-solid fa-clock"></i></div>
+      <div class="sidebar-label">ساعات الذروة</div>
+    </div>
+    
+    <div class="sidebar-item" onclick="showPanel('sellers')" id="menu-sellers">
+      <div class="sidebar-icon"><i class="fa-solid fa-users"></i></div>
+      <div class="sidebar-label">أداء البائعين</div>
+    </div>
+
+    <div class="sidebar-item" onclick="showPanel('expiryLosses')" id="menu-expiryLosses">
+      <div class="sidebar-icon"><i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i></div>
+      <div class="sidebar-label" style="color:#ef4444;">خسائر الصلاحية</div>
+    </div>
+  </div>
+
+  <!-- المحتوى الرئيسي -->
+  <div class="dashboard-main" style="margin-top:64px;">
+    
+    <!-- شريط المعلومات العلوي -->
+    <div class="info-bar">
+      <div class="date-display">
+        <i class="fa-regular fa-calendar"></i>
+        <span id="currentDate"></span>
+        <span id="currentTime"></span>
+      </div>
+      <button class="refresh-btn" onclick="refreshDashboard()" title="تحديث">
+        <i class="fa-solid fa-rotate"></i>
+      </button>
+    </div>
+
+    <!-- ========== لوحة التحكم الرئيسية ========== -->
+    <div id="panel-dashboard" class="panel active">
+      
+      <!-- بطاقات KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card revenue">
+          <div class="kpi-header">
+            <span class="kpi-title">إجمالي المداخيل (اليوم)</span>
+            <div class="kpi-icon revenue">
+              <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+          </div>
+          <div class="kpi-value" id="kpiRevenue">0</div>
+          <div class="kpi-compare">
+            <span id="revenueCompare">مقارنة بالأمس</span>
+            <span id="revenueTrend" class="trend-flat">0%</span>
+          </div>
+        </div>
+
+        <div class="kpi-card profit">
+          <div class="kpi-header">
+            <span class="kpi-title">صافي الربح (اليوم)</span>
+            <div class="kpi-icon profit">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+          </div>
+          <div class="kpi-value" id="kpiProfit">0</div>
+          <div class="kpi-compare">
+            <span id="profitCompare">مقارنة بالأمس</span>
+            <span id="profitTrend" class="trend-flat">0%</span>
+          </div>
+        </div>
+
+        <div class="kpi-card expenses">
+          <div class="kpi-header">
+            <span class="kpi-title">المصاريف (اليوم)</span>
+            <div class="kpi-icon expenses">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+          </div>
+          <div class="kpi-value" id="kpiExpenses">0</div>
+          <div class="kpi-compare">
+            <span>مقارنة بالأمس</span>
+            <span id="expensesTrend" class="trend-flat">0%</span>
+          </div>
+        </div>
+
+        <div class="kpi-card debts">
+          <div class="kpi-header">
+            <span class="kpi-title">الديون القائمة</span>
+            <div class="kpi-icon debts">
+              <i class="fa-solid fa-hand-holding-dollar"></i>
+            </div>
+          </div>
+          <div class="kpi-value" id="kpiDebts">0</div>
+          <div class="kpi-compare">
+            <span>عدد الديون</span>
+            <span id="debtsCount" class="trend-flat">0</span>
+          </div>
+        </div>
+
+        <div class="kpi-card settled">
+          <div class="kpi-header">
+            <span class="kpi-title">الديون المسددة (اليوم)</span>
+            <div class="kpi-icon settled">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+          </div>
+          <div class="kpi-value" id="kpiSettled">0</div>
+          <div class="kpi-compare">
+            <span>عدد التسديدات</span>
+            <span id="settledCount" class="trend-flat">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- شريط التمرير السفلي -->
+      <div class="ticker-wrap">
+        <div class="ticker" id="ticker"></div>
+      </div>
+
+      <!-- أشرطة الفترات -->
+      <div class="period-tabs">
+        <button class="period-tab active" onclick="setPeriod('week')">أسبوعي</button>
+        <button class="period-tab" onclick="setPeriod('month')">شهري</button>
+        <button class="period-tab" onclick="setPeriod('year')">سنوي</button>
+      </div>
+
+      <!-- التحليلات -->
+      <div class="analytics-grid">
+        <!-- الرسم البياني -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <i class="fa-solid fa-chart-column"></i>
+              <span>تحليل المبيعات</span>
+            </div>
+            <div class="legend">
+              <div class="legend-item">
+                <div class="legend-dot current"></div>
+                <span>هذه الفترة</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot previous"></div>
+                <span>الفترة السابقة</span>
+              </div>
+            </div>
+          </div>
+          <canvas id="salesChart" height="200"></canvas>
+        </div>
+
+        <!-- مؤشر صحة المتجر -->
+        <div class="health-meter">
+          <div class="gauge">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-bg" cx="50" cy="50" r="45"></circle>
+              <circle class="gauge-fill" cx="50" cy="50" r="45" id="gaugeFill"></circle>
+            </svg>
+            <div class="gauge-text">
+              <div class="gauge-score" id="healthScore">0</div>
+              <div class="gauge-label">نقاط</div>
+            </div>
+          </div>
+          <div class="health-details">
+            <div class="health-row">
+              <span class="health-row-label">سيولة</span>
+              <div class="health-bar">
+                <div class="health-bar-fill" id="liquidityBar" style="width:0%; background:#10b981;"></div>
+              </div>
+            </div>
+            <div class="health-row">
+              <span class="health-row-label">مخزون</span>
+              <div class="health-bar">
+                <div class="health-bar-fill" id="stockBar" style="width:0%; background:#7c3aed;"></div>
+              </div>
+            </div>
+            <div class="health-row">
+              <span class="health-row-label">ديون</span>
+              <div class="health-bar">
+                <div class="health-bar-fill" id="debtBar" style="width:0%; background:#ef4444;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- تصنيف ABC والمنتجات الأكثر مبيعاً -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;">
+        <div class="abc-container">
+          <div class="chart-header" style="margin-bottom:15px;">
+            <div class="chart-title">
+              <i class="fa-solid fa-chart-simple"></i>
+              <span>تصنيف ABC</span>
+            </div>
+          </div>
+          <div id="abcList"></div>
+        </div>
+
+        <div class="abc-container">
+          <div class="chart-header" style="margin-bottom:15px;">
+            <div class="chart-title">
+              <i class="fa-solid fa-crown"></i>
+              <span>أكثر المنتجات مبيعاً</span>
+            </div>
+          </div>
+          <div id="topProducts"></div>
+        </div>
+      </div>
+
+      <!-- جدول آخر المبيعات -->
+      <div class="expenses-section" style="margin-top:20px;">
+        <div class="chart-header" style="margin-bottom:15px;">
+          <div class="chart-title">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>آخر 10 مبيعات</span>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="showPanel('archive')">
+            عرض الكل
+          </button>
+        </div>
+        <table class="sales-table">
+          <thead>
+            <tr>
+              <th>الفاتورة</th>
+              <th>التاريخ</th>
+              <th>الزبون</th>
+              <th>المبلغ</th>
+              <th>الحالة</th>
+            </tr>
+          </thead>
+          <tbody id="recentSales"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== لوحة المداخيل اليومية ========== -->
+    <div id="panel-daily" class="panel" style="display:none;">
+      <div class="chart-header" style="margin-bottom:20px;">
+        <div class="chart-title">
+          <i class="fa-solid fa-calendar-day"></i>
+          <span>المداخيل اليومية</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <input type="date" id="dailyDate" class="form-input" style="width:150px;" onchange="loadDailyReport()"/>
+          <button class="btn btn-primary btn-sm" onclick="printDailyReport()">
+            <i class="fa-solid fa-print"></i> طباعة
+          </button>
+          <button class="btn-daily-close" onclick="openDailyClose()">
+            <i class="fa-solid fa-store-slash"></i> إغلاق يومي
+          </button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="margin-bottom:20px;">
+        <div class="kpi-card revenue">
+          <div class="kpi-header">
+            <span class="kpi-title">إجمالي المبيعات</span>
+          </div>
+          <div class="kpi-value" id="dailyTotal">0</div>
+        </div>
+        <div class="kpi-card profit">
+          <div class="kpi-header">
+            <span class="kpi-title">نقدي مقبوض</span>
+          </div>
+          <div class="kpi-value" id="dailyCash">0</div>
+        </div>
+        <div class="kpi-card debts">
+          <div class="kpi-header">
+            <span class="kpi-title">ديون جديدة</span>
+          </div>
+          <div class="kpi-value" id="dailyNewDebt">0</div>
+        </div>
+        <div class="kpi-card expenses">
+          <div class="kpi-header">
+            <span class="kpi-title">المصاريف</span>
+          </div>
+          <div class="kpi-value" id="dailyExpenses">0</div>
+        </div>
+        <div class="kpi-card profit">
+          <div class="kpi-header">
+            <span class="kpi-title">عدد الفواتير</span>
+          </div>
+          <div class="kpi-value" id="dailyCount">0</div>
+        </div>
+        <div class="kpi-card debts">
+          <div class="kpi-header">
+            <span class="kpi-title">صافي الربح</span>
+          </div>
+          <div class="kpi-value" id="dailyProfit">0</div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">تفاصيل المبيعات</div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="sales-table">
+            <thead>
+              <tr>
+                <th>الوقت</th>
+                <th>الفاتورة</th>
+                <th>الزبون</th>
+                <th>المنتجات</th>
+                <th>الإجمالي</th>
+                <th>نقدي</th>
+                <th>دين</th>
+                <th>الحالة</th>
+                <th>طباعة</th>
+              </tr>
+            </thead>
+            <tbody id="dailySalesList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== لوحة الديون ========== -->
+    <div id="panel-debts" class="panel" style="display:none;">
+      <div class="chart-header" style="margin-bottom:20px;">
+        <div class="chart-title">
+          <i class="fa-solid fa-hand-holding-dollar"></i>
+          <span>الديون القائمة</span>
+        </div>
+        <div>
+          <span style="color:var(--text-secondary); margin-left:10px;">إجمالي الديون:</span>
+          <span style="font-size:1.3rem; font-weight:900; color:var(--danger);" id="totalDebts">0</span>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">قائمة الديون</div>
+          <div class="table-actions">
+            <select class="form-select" style="width:150px;" onchange="filterDebts(this.value)">
+              <option value="all">كل الديون</option>
+              <option value="active">غير المسددة</option>
+              <option value="paid">المسددة</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="sales-table">
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>الزبون</th>
+                <th>الهاتف</th>
+                <th>الفاتورة</th>
+                <th>المبلغ الأصلي</th>
+                <th>المتبقي</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="debtsList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== لوحة العائلات ========== -->
+    <div id="panel-families" class="panel" style="display:none;">
+      <div class="chart-header" style="margin-bottom:20px;">
+        <div class="chart-title">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>تحليل مبيعات العائلات</span>
+        </div>
+        <input type="date" id="familiesDate" class="form-input" style="width:150px;" onchange="loadFamiliesReport()"/>
+      </div>
+
+      <div class="table-container">
+        <div style="padding:20px;">
+          <canvas id="familiesChart" height="300"></canvas>
+        </div>
+        <table class="sales-table">
+          <thead>
+            <tr>
+              <th>العائلة</th>
+              <th>عدد المبيعات</th>
+              <th>الكمية</th>
+              <th>الإجمالي</th>
+              <th>النسبة</th>
+            </tr>
+          </thead>
+          <tbody id="familiesList"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== لوحة المنتجات ========== -->
+    <div id="panel-products" class="panel" style="display:none;">
+      <div class="chart-header" style="margin-bottom:20px;">
+        <div class="chart-title">
+          <i class="fa-solid fa-box"></i>
+          <span>تحليل مبيعات المنتجات</span>
+        </div>
+        <input type="date" id="productsDate" class="form-input" style="width:150px;" onchange="loadProductsReport()"/>
+      </div>
+
+      <div class="table-container">
+        <div style="overflow-x:auto; max-height:500px;">
+          <table class="sales-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>المنتج</th>
+                <th>الكمية</th>
+                <th>الإجمالي</th>
+                <th>النسبة</th>
+              </tr>
+            </thead>
+            <tbody id="productsList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== لوحة المحاسبة ========== -->
+    <div id="panel-accounting" class="panel" style="display:none;">
+      <div class="chart-header" style="margin-bottom:20px;">
+        <div class="chart-title">
+          <i class="fa-solid fa-calculator"></i>
+          <span>النظام المحاسبي</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <input type="date" id="accDate" class="form-input" style="width:150px;" onchange="loadAccounting()"/>
+          <button class="btn btn-primary btn-sm" onclick="exportAccounting()">
+            <i class="fa-solid fa-download"></i> تصدير
+          </button>
+        </div>
+      </div>
+
+      <div class="accounting-stats">
+        <div class="stat-card-sm">
+          <div class="stat-label-sm">إجمالي المبيعات</div>
+          <div class="stat-value-sm" id="accRevenue">0</div>
+        </div>
+        <div class="stat-card-sm">
+          <div class="stat-label-sm">تكلفة المشتريات</div>
+          <div class="stat-value-sm" id="accCost">0</div>
+        </div>
+        <div class="stat-card-sm">
+          <div class="stat-label-sm">المصاريف</div>
+          <div class="stat-value-sm" id="accExpenses">0</div>
+        </div>
+        <div class="stat-card-sm">
+          <div class="stat-label-sm">صافي الربح</div>
+          <div class="stat-value-sm" id="accProfit">0</div>
+        </div>
+        <div class="stat-card-sm">
+          <div class="stat-label-sm">الديون</div>
+          <div class="stat-value-sm" id="accDebts">0</div>
+        </div>
+        <div class="stat-card-sm">
+          <div class="stat-label-sm">عدد المبيعات</div>
+          <div class="stat-value-sm" id="accCount">0</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+        <!-- إضافة مصروف -->
+        <div class="expenses-section">
+          <div class="chart-header" style="margin-bottom:15px;">
+            <div class="chart-title">
+              <i class="fa-solid fa-plus-circle"></i>
+              <span>إضافة مصروف</span>
+            </div>
+          </div>
+          
+          <div class="form-group" style="margin-bottom:10px;">
+            <input type="text" class="form-input" id="expCategory" placeholder="الفئة (كهرباء، كراء...)"/>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <input type="number" class="form-input" id="expAmount" placeholder="المبلغ"/>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <input type="text" class="form-input" id="expNote" placeholder="ملاحظة"/>
+          </div>
+          <button class="btn btn-success" style="width:100%;" onclick="addExpense()">
+            <i class="fa-solid fa-plus"></i> إضافة
+          </button>
+        </div>
+
+        <!-- آخر المصاريف -->
+        <div class="expenses-section">
+          <div class="chart-header" style="margin-bottom:15px;">
+            <div class="chart-title">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span>آخر المصاريف</span>
+            </div>
+          </div>
+          <div id="recentExpenses" style="max-height:200px; overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== لوحة الأرشيف ========== -->
+    <div id="panel-archive" class="panel" style="display:none;">
+      <div class="chart-header" style="margin-bottom:20px;">
+        <div class="chart-title">
+          <i class="fa-solid fa-box-archive"></i>
+          <span>أرشيف المبيعات</span>
+        </div>
+      </div>
+
+      <div class="archive-search">
+        <div class="search-box" style="flex:2;">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" id="archiveSearch" placeholder="ابحث برقم الفاتورة أو اسم الزبون..." oninput="filterArchive()"/>
+        </div>
+        
+        <div class="date-range">
+          <i class="fa-regular fa-calendar"></i>
+          <input type="date" id="archiveFrom" onchange="filterArchive()"/>
+          <span>إلى</span>
+          <input type="date" id="archiveTo" onchange="filterArchive()"/>
+        </div>
+        
+        <select class="form-select" style="width:150px;" onchange="filterArchive()">
+          <option value="all">كل الحالات</option>
+          <option value="paid">مسددة</option>
+          <option value="debt">دين</option>
+          <option value="cancelled">ملغاة</option>
+        </select>
+      </div>
+
+      <div class="table-container">
+        <div style="overflow-x:auto; max-height:500px;">
+          <table class="sales-table">
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>الفاتورة</th>
+                <th>الزبون</th>
+                <th>المنتجات</th>
+                <th>الإجمالي</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="archiveList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== لوحة ساعات الذروة ========== -->
+    <div id="panel-peakHours" class="panel" style="display:none;">
+      <div class="chart-header" style="margin-bottom:20px;">
+        <div class="chart-title">
+          <i class="fa-solid fa-clock"></i>
+          <span>تحليل ساعات الذروة</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <input type="date" id="peakFrom" class="form-input" style="width:150px;" onchange="loadPeakHours()"/>
+          <span>إلى</span>
+          <input type="date" id="peakTo" class="form-input" style="width:150px;" onchange="loadPeakHours()"/>
+        </div>
+      </div>
+
+      <div class="peak-hours-grid" id="peakHoursGrid"></div>
+      
+      <div class="chart-card" style="margin-top:20px;">
+        <canvas id="peakChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- ========== لوحة أداء البائعين ========== -->
+    <div id="panel-sellers" class="panel" style="display:none;">
+      <div class="chart-header" style="margin-bottom:20px;">
+        <div class="chart-title">
+          <i class="fa-solid fa-users"></i>
+          <span>أداء البائعين</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <input type="date" id="sellerFrom" class="form-input" style="width:150px;" onchange="loadSellers()"/>
+          <span>إلى</span>
+          <input type="date" id="sellerTo" class="form-input" style="width:150px;" onchange="loadSellers()"/>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="sales-table">
+          <thead>
+            <tr>
+              <th>البائع</th>
+              <th>عدد الفواتير</th>
+              <th>إجمالي المبيعات</th>
+              <th>نقدي</th>
+              <th>ديون</th>
+              <th>المعدل</th>
+            </tr>
+          </thead>
+          <tbody id="sellersList"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== لوحة خسائر الصلاحية ========== -->
+    <div id="panel-expiryLosses" class="panel" style="display:none;">
+
+      <!-- رأس اللوحة -->
+      <div class="chart-header" style="margin-bottom:20px;">
+        <div class="chart-title">
+          <i class="fa-solid fa-calendar-xmark" style="color:#ef4444;"></i>
+          <span>تقرير خسائر الصلاحية</span>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <select id="expiryLossRange" class="form-input" style="width:160px;"
+                  onchange="loadExpiryLossesReport()">
+            <option value="month">هذا الشهر</option>
+            <option value="3months">آخر 3 أشهر</option>
+            <option value="year">هذه السنة</option>
+            <option value="all">كل الوقت</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- بطاقات الملخص -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+                  gap:14px; margin-bottom:22px;">
+
+        <div class="kpi-card" style="border-right:4px solid #ef4444;">
+          <div class="kpi-header">
+            <span class="kpi-title">إجمالي الخسائر</span>
+            <div class="kpi-icon" style="background:rgba(239,68,68,0.15); color:#ef4444;">
+              <i class="fa-solid fa-money-bill-wave"></i>
+            </div>
+          </div>
+          <div class="kpi-value" id="elTotalLoss" style="color:#ef4444;">—</div>
+          <span class="trend-flat" id="elTotalCount">0 عملية</span>
+        </div>
+
+        <div class="kpi-card" style="border-right:4px solid #ea580c;">
+          <div class="kpi-header">
+            <span class="kpi-title">أكثر منتج خسارة</span>
+            <div class="kpi-icon" style="background:rgba(234,88,12,0.15); color:#ea580c;">
+              <i class="fa-solid fa-trophy"></i>
+            </div>
+          </div>
+          <div class="kpi-value" id="elTopProduct"
+               style="color:#ea580c; font-size:0.9rem; font-family:var(--font-main);">—</div>
+        </div>
+
+        <div class="kpi-card" style="border-right:4px solid #f59e0b;">
+          <div class="kpi-header">
+            <span class="kpi-title">متوسط الخسارة / شطب</span>
+            <div class="kpi-icon" style="background:rgba(245,158,11,0.15); color:#f59e0b;">
+              <i class="fa-solid fa-chart-simple"></i>
+            </div>
+          </div>
+          <div class="kpi-value" id="elAvgLoss" style="color:#f59e0b;">—</div>
+        </div>
+
+      </div>
+
+      <!-- جدول تفصيلي -->
+      <div class="table-container">
+        <table class="sales-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>المنتج</th>
+              <th>الخسارة</th>
+              <th>التاريخ</th>
+              <th>ملاحظة</th>
+            </tr>
+          </thead>
+          <tbody id="expiryLossesTbody">
+            <tr>
+              <td colspan="5" style="text-align:center; padding:40px;
+                  color:var(--text-secondary);">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;"></i>
+                <p style="margin-top:10px;">جاري التحميل...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar" id="sidebar">
+  <!-- محتوى sidebar قياسي -->
+</div>
+
+<!-- ══ Modal: الإغلاق اليومي ══ -->
+<div class="modal-overlay" id="dailyCloseModal">
+  <div class="modal modal-sm">
+    <div class="modal-header" style="border-bottom-color: #f59e0b;">
+      <span class="modal-title">
+        <i class="fa-solid fa-store-slash" style="color:#f59e0b;"></i>
+        إغلاق يومي — <span id="dcDate"></span>
+      </span>
+      <button class="modal-close" onclick="closeModal('dailyCloseModal')">✕</button>
+    </div>
+
+    <!-- ملخص مالي لليوم -->
+    <div class="dc-summary-grid">
+      <div class="dc-summary-item">
+        <span class="dc-summary-label">💰 إجمالي المبيعات</span>
+        <span class="dc-summary-value revenue" id="dcTotal">—</span>
+      </div>
+      <div class="dc-summary-item">
+        <span class="dc-summary-label">💵 نقدي مقبوض</span>
+        <span class="dc-summary-value revenue" id="dcCash">—</span>
+      </div>
+      <div class="dc-summary-item">
+        <span class="dc-summary-label">📄 عدد الفواتير</span>
+        <span class="dc-summary-value" id="dcCount">—</span>
+      </div>
+      <div class="dc-summary-item">
+        <span class="dc-summary-label">💳 ديون جديدة</span>
+        <span class="dc-summary-value debts" id="dcNewDebt">—</span>
+      </div>
+      <div class="dc-summary-item">
+        <span class="dc-summary-label">🧾 المصاريف</span>
+        <span class="dc-summary-value expenses" id="dcExpenses">—</span>
+      </div>
+      <div class="dc-summary-item">
+        <span class="dc-summary-label">📊 صافي الربح</span>
+        <span class="dc-summary-value profit" id="dcProfit">—</span>
+      </div>
+    </div>
+
+    <div class="dc-warn-box">
+      <i class="fa-solid fa-circle-info" style="color:#f59e0b;"></i>
+      بعد التأكيد سيُعاد ترقيم الفواتير من
+      <strong>#001</strong> ابتداءً من أوّل فاتورة الغد.
+      لا يؤثر ذلك على أي بيانات أو سجلات محفوظة.
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-primary" style="flex:2; background:linear-gradient(135deg,#f59e0b,#b45309);"
+              id="dcConfirmBtn" onclick="confirmDailyClose()">
+        <i class="fa-solid fa-store-slash"></i> تأكيد الإغلاق وإعادة العداد
+      </button>
+      <button class="btn btn-secondary" style="flex:1;"
+              onclick="closeModal('dailyCloseModal')">
+        إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+<script src="sync.js"></script>
+<script src="print.js"></script>
+<script>
+// ============================================================
+//  HP-POS - reports.js  v8.1.0  (محسن بالكامل)
+// ============================================================
+
+// متغيرات عامة
+let allSales = [];
+let allItems = [];
+let allCustomers = [];
+let allProducts = [];
+let allFamilies = [];
+let allExpenses = [];
+let allDebts = [];
+let allUsers = [];
+let allTransactions = [];
+let allDebtPayments = [];
+
+let salesChart = null;
+let familiesChart = null;
+let peakChart = null;
+
+let currentPeriod = 'week';
+let currentPanel = 'dashboard';
+
+// ============================================================
+//  التهيئة
+// ============================================================
+async function init() {
+  // التحقق من الصلاحية
+  if (!window.sessionManager.requireRole(['admin', 'manager'])) return;
+  
+  // تهيئة التطبيق
+  await window.initApp();
+  
+  // إخفاء الإشعارات في صفحات الإدارة
+  const _bell = document.getElementById('_notifBell');
+  if (_bell) _bell.remove();
+  
+  // تحميل البيانات
+  await loadAllData();
+  
+  // تحديث الواجهة
+  updateDateDisplay();
+  await updateSidebarValues();
+  await loadDashboard();
+  
+  // تحديث تلقائي كل 60 ثانية
+  setInterval(async () => {
+    if (currentPanel === 'dashboard') {
+      await loadAllData();
+      await loadDashboard();
+    }
+  }, 60000);
+
+  // ── تحديثات آنية: إعادة تحميل اللوحة الحالية عند أي تغيير ───
+  const _rtRptReload = _debounce(async () => {
+    await loadAllData();
+    await updateSidebarValues();
+    showPanel(currentPanel);
+  }, 500);
+  window.realtimeManager?.subscribe(
+    ['sales', 'saleItems', 'expenses', 'debts', 'debtPayments',
+     'products', 'customers', 'workers', 'workerPayments', 'purchases'],
+    _rtRptReload
+  );
+
+  console.log('✅ لوحة التحكم جاهزة');
+}
+
+// ============================================================
+//  تحميل البيانات
+// ============================================================
+async function loadAllData() {
+  allSales        = await window.dbManager.getAll('sales');
+  allItems        = await window.dbManager.getAll('saleItems');
+  allCustomers    = await window.dbManager.getAll('customers');
+  allProducts     = await window.dbManager.getAll('products');
+  allFamilies     = await window.dbManager.getAll('families');
+  allExpenses     = await window.dbManager.getAll('expenses');
+  allDebts        = await window.dbManager.getAll('debts');
+  allUsers        = await window.dbManager.getAll('users');
+  allDebtPayments = await window.dbManager.getAll('debtPayments');
+  // ✅ تحميل transactions مع حماية من عدم وجود الجدول في DB القديم
+  try {
+    allTransactions = await window.dbManager.getAll('transactions');
+  } catch (e) {
+    allTransactions = [];
+  }
+}
+
+// ============================================================
+//  التبديل بين اللوحات
+// ============================================================
+function showPanel(panelId) {
+  currentPanel = panelId;
+  
+  // تحديث القائمة الجانبية
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  document.getElementById(`menu-${panelId}`).classList.add('active');
+  
+  // إخفاء جميع اللوحات
+  document.querySelectorAll('.panel').forEach(panel => {
+    panel.style.display = 'none';
+  });
+  
+  // إظهار اللوحة المطلوبة
+  document.getElementById(`panel-${panelId}`).style.display = 'block';
+  
+  // تحميل البيانات حسب اللوحة
+  switch(panelId) {
+    case 'dashboard':
+      loadDashboard();
+      break;
+    case 'daily':
+      document.getElementById('dailyDate').value = window.dateUtils.today();
+      loadDailyReport();
+      break;
+    case 'debts':
+      loadDebts();
+      break;
+    case 'families':
+      document.getElementById('familiesDate').value = window.dateUtils.today();
+      loadFamiliesReport();
+      break;
+    case 'products':
+      document.getElementById('productsDate').value = window.dateUtils.today();
+      loadProductsReport();
+      break;
+    case 'accounting':
+      document.getElementById('accDate').value = window.dateUtils.today();
+      loadAccounting();
+      break;
+    case 'archive':
+      loadArchive();
+      break;
+    case 'peakHours':
+      const today = window.dateUtils.today();
+      document.getElementById('peakFrom').value = today;
+      document.getElementById('peakTo').value = today;
+      loadPeakHours();
+      break;
+    case 'sellers':
+      const firstDay = window.dateUtils.today().slice(0,7) + '-01';
+      document.getElementById('sellerFrom').value = firstDay;
+      document.getElementById('sellerTo').value = window.dateUtils.today();
+      loadSellers();
+      break;
+    case 'expiryLosses':
+      loadExpiryLossesReport();
+      break;
+  }
+}
+
+// ============================================================
+//  تحديث التاريخ والوقت
+// ============================================================
+function updateDateDisplay() {
+  const now = new Date();
+  const dateEl = document.getElementById('currentDate');
+  const timeEl = document.getElementById('currentTime');
+  
+  dateEl.textContent = now.toLocaleDateString('ar-DZ', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
+  timeEl.textContent = now.toLocaleTimeString('ar-DZ', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  
+  setTimeout(updateDateDisplay, 1000);
+}
+
+// ============================================================
+//  تحديث القيم الجانبية
+// ============================================================
+async function updateSidebarValues() {
+  const today = window.dateUtils.today();
+
+  // ✅ نقدي مقبوض من المبيعات (paid فقط — الديون paid=0)
+  const todaySales = allSales.filter(s =>
+    !s.isCancelled &&
+    s.date.startsWith(today) &&
+    s.invoiceKind !== 'settlement'
+  );
+  const salesCash = todaySales.reduce((sum, s) => sum + (s.paid || 0), 0);
+
+  // ✅ تسديدات الديون من debtPayments
+  const todayDebtPmts = allDebtPayments.filter(p => p.date.startsWith(today));
+  const paymentsCash  = todayDebtPmts.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+  // ✅ إجمالي النقد المقبوض فعلاً
+  const dailyTotal = salesCash + paymentsCash;
+  document.getElementById('dailyValue').textContent = window.currencyFormatter.formatWithoutSymbol(dailyTotal);
+
+  // ✅ ديون قائمة غير مسددة
+  const activeDebts = allDebts.filter(d => !d.isPaid);
+  const debtsTotal  = activeDebts.reduce((sum, d) => sum + (d.amount || 0), 0);
+  document.getElementById('debtsValue').textContent = window.currencyFormatter.formatWithoutSymbol(debtsTotal);
+}
+
+// ============================================================
+//  حساب الربح التناسبي على التسديدات — دالة مساعدة
+// ============================================================
+function calcSaleCost(saleId) {
+  const items = allItems.filter(i => i.saleId === saleId);
+  let cost = 0;
+  for (const item of items) {
+    const product = allProducts.find(p => p.id === item.productId);
+    cost += (product?.buyPrice || 0) * item.quantity;
+  }
+  return cost;
+}
+
+function calcProportionalProfit(saleId, paymentAmount) {
+  const sale = allSales.find(s => s.id === saleId);
+  if (!sale || !sale.total) return 0;
+  const cost = calcSaleCost(saleId);
+  const marginRate = (sale.total - cost) / sale.total;
+  return paymentAmount * marginRate;
+}
+
+// حساب ربح تسديدات الديون في تاريخ معين
+function calcDebtPaymentsProfit(date) {
+  const dayPayments = allDebtPayments.filter(p => p.date.startsWith(date));
+  let profit = 0;
+  for (const payment of dayPayments) {
+    const debt = allDebts.find(d => d.id === payment.debtId);
+    if (!debt || !debt.saleId) continue;
+    profit += calcProportionalProfit(debt.saleId, payment.amount);
+  }
+  return profit;
+}
+
+// ============================================================
+//  لوحة التحكم الرئيسية
+// ============================================================
+async function loadDashboard() {
+  const today = window.dateUtils.today();
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  // ✅ مبيعات حقيقية فقط — بدون وصولات التسديد القديم
+  const todaySales = allSales.filter(s =>
+    !s.isCancelled &&
+    s.date.startsWith(today) &&
+    s.invoiceKind !== 'settlement'
+  );
+  const yesterdaySales = allSales.filter(s =>
+    !s.isCancelled &&
+    s.date.startsWith(yesterday) &&
+    s.invoiceKind !== 'settlement'
+  );
+
+  // ✅ نقدي مقبوض من المبيعات فقط (paid) — الدين paid=0 لا يُحسب
+  const salesCash    = todaySales.reduce((sum, s) => sum + (s.paid  || 0), 0);
+  const totalSales   = todaySales.reduce((sum, s) => sum + (s.total || 0), 0);
+  const newDebts     = todaySales.reduce((sum, s) => sum + Math.max(0,(s.total||0)-(s.paid||0)), 0);
+  const yesterdayCash = yesterdaySales.reduce((sum, s) => sum + (s.paid || 0), 0);
+
+  // ✅ تسديدات الديون اليوم من debtPayments (المرجع الأدق)
+  const dayDebtPayments = allDebtPayments.filter(p => p.date.startsWith(today));
+  const paymentsCash = dayDebtPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+  // ✅ إجمالي ما قُبض فعلاً = نقدي من مبيعات + تسديدات ديون
+  const todayRevenue = salesCash + paymentsCash;
+
+  // ✅ ربح المبيعات النقدية — تكلفة تناسبية لما دُفع فقط
+  let cashSalesProfit = 0;
+  for (const sale of todaySales.filter(s => (s.paid || 0) > 0)) {
+    const cost = calcSaleCost(sale.id);
+    const paidRatio = sale.total > 0 ? (sale.paid / sale.total) : 1;
+    cashSalesProfit += (sale.paid || 0) - (cost * paidRatio);
+  }
+
+  // ✅ ربح تسديدات الديون — تناسبي بالنسبة لهامش البيع الأصلي
+  const debtPaymentsProfit = calcDebtPaymentsProfit(today);
+
+  // ✅ مصاريف اليوم — فقط include_in_reports = true
+  const todayExpenses = allExpenses.filter(e =>
+    e.date?.startsWith(today) &&
+    e.isPaid &&
+    e.include_in_reports === true
+  );
+  const expensesTotal = todayExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  // ✅ صافي الربح الحقيقي
+  const todayProfit = cashSalesProfit + debtPaymentsProfit - expensesTotal;
+
+  // ديون قائمة (غير مسددة)
+  const activeDebts = allDebts.filter(d => !d.isPaid);
+  const debtsTotal  = activeDebts.reduce((sum, d) => sum + (d.amount || 0), 0);
+
+  // ✅ تسديدات اليوم
+  const settledTotal = paymentsCash;
+  const settledCount = dayDebtPayments.length;
+
+  document.getElementById('kpiRevenue').textContent  = window.currencyFormatter.format(todayRevenue);
+  document.getElementById('kpiProfit').textContent   = window.currencyFormatter.format(todayProfit);
+  document.getElementById('kpiExpenses').textContent = window.currencyFormatter.format(expensesTotal);
+  document.getElementById('kpiDebts').textContent    = window.currencyFormatter.format(debtsTotal);
+  document.getElementById('debtsCount').textContent  = activeDebts.length;
+  document.getElementById('kpiSettled').textContent  = window.currencyFormatter.format(settledTotal);
+  document.getElementById('settledCount').textContent = settledCount;
+
+  // حساب التغير مقارنة بالأمس
+  const revenueChange = yesterdayCash ? ((todayRevenue - yesterdayCash) / yesterdayCash * 100).toFixed(1) : 0;
+  const revenueTrend = document.getElementById('revenueTrend');
+  revenueTrend.textContent = (revenueChange > 0 ? '+' : '') + revenueChange + '%';
+  revenueTrend.className = revenueChange > 0 ? 'trend-up' : revenueChange < 0 ? 'trend-down' : 'trend-flat';
+
+  await updateTicker();
+  await updateChart();
+  await updateHealthMeter();
+  await updateABC();
+  await updateRecentSales();
+}
+
+// ============================================================
+//  شريط التمرير
+// ============================================================
+async function updateTicker() {
+  const today = window.dateUtils.today();
+  const todaySales = allSales.filter(s => !s.isCancelled && s.date.startsWith(today));
+  const todayRevenue = todaySales.reduce((sum, s) => sum + (s.paid || 0), 0);
+  
+  const lowStock = allProducts.filter(p => p.quantity > 0 && p.quantity <= 5).length;
+  const outStock = allProducts.filter(p => p.quantity === 0).length;
+  const expiringSoon = allProducts.filter(p => {
+    if (!p.expiryDate) return false;
+    const days = window.dateUtils.daysBetween(p.expiryDate);
+    return days > 0 && days <= 30;
+  }).length;
+  
+  const totalDebts = allDebts.filter(d => !d.isPaid).reduce((sum, d) => sum + (d.amount || 0), 0);
+  
+  const ticker = document.getElementById('ticker');
+  
+  // مضاعفة المحتوى للتمرير المستمر
+  ticker.innerHTML = `
+    <div class="ticker-item">
+      <i class="fa-solid fa-sack-dollar ticker-up"></i>
+      <span>مداخيل اليوم: ${window.currencyFormatter.format(todayRevenue)}</span>
+    </div>
+    <div class="ticker-item">
+      <i class="fa-solid fa-boxes"></i>
+      <span>مخزون منخفض: ${lowStock}</span>
+    </div>
+    <div class="ticker-item">
+      <i class="fa-solid fa-ban ticker-down"></i>
+      <span>منتجات نافدة: ${outStock}</span>
+    </div>
+    <div class="ticker-item">
+      <i class="fa-solid fa-clock ticker-down"></i>
+      <span>تنتهي قريباً: ${expiringSoon}</span>
+    </div>
+    <div class="ticker-item">
+      <i class="fa-solid fa-hand-holding-dollar ticker-down"></i>
+      <span>إجمالي الديون: ${window.currencyFormatter.format(totalDebts)}</span>
+    </div>
+    <div class="ticker-item">
+      <i class="fa-regular fa-clock"></i>
+      <span>آخر تحديث: ${new Date().toLocaleTimeString('ar-DZ')}</span>
+    </div>
+  ` + `
+    <div class="ticker-item">
+      <i class="fa-solid fa-sack-dollar ticker-up"></i>
+      <span>مداخيل اليوم: ${window.currencyFormatter.format(todayRevenue)}</span>
+    </div>
+    <div class="ticker-item">
+      <i class="fa-solid fa-boxes"></i>
+      <span>مخزون منخفض: ${lowStock}</span>
+    </div>
+    <div class="ticker-item">
+      <i class="fa-solid fa-ban ticker-down"></i>
+      <span>منتجات نافدة: ${outStock}</span>
+    </div>
+    <div class="ticker-item">
+      <i class="fa-solid fa-clock ticker-down"></i>
+      <span>تنتهي قريباً: ${expiringSoon}</span>
+    </div>
+    <div class="ticker-item">
+      <i class="fa-solid fa-hand-holding-dollar ticker-down"></i>
+      <span>إجمالي الديون: ${window.currencyFormatter.format(totalDebts)}</span>
+    </div>
+    <div class="ticker-item">
+      <i class="fa-regular fa-clock"></i>
+      <span>آخر تحديث: ${new Date().toLocaleTimeString('ar-DZ')}</span>
+    </div>
+  `;
+}
+
+// ============================================================
+//  الرسم البياني
+// ============================================================
+async function updateChart() {
+  const ctx = document.getElementById('salesChart').getContext('2d');
+  
+  // تجهيز البيانات حسب الفترة
+  let labels = [];
+  let currentData = [];
+  let previousData = [];
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (currentPeriod === 'week') {
+    // آخر 7 أيام
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const currentSales = allSales.filter(s => 
+        !s.isCancelled && s.date.startsWith(dateStr)
+      );
+      currentData.push(currentSales.reduce((sum, s) => sum + (s.total || 0), 0));
+      
+      const prevDate = new Date(date);
+      prevDate.setDate(prevDate.getDate() - 7);
+      const prevStr = prevDate.toISOString().split('T')[0];
+      
+      const prevSales = allSales.filter(s => 
+        !s.isCancelled && s.date.startsWith(prevStr)
+      );
+      previousData.push(prevSales.reduce((sum, s) => sum + (s.total || 0), 0));
+      
+      labels.push(date.toLocaleDateString('ar-DZ', { weekday: 'short' }));
+    }
+  } else if (currentPeriod === 'month') {
+    // آخر 30 يوم (تجمع أسبوعي)
+    for (let i = 3; i >= 0; i--) {
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() - (i * 7));
+      const startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - 6);
+      
+      let currentTotal = 0;
+      let prevTotal = 0;
+      
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        
+        const currentSales = allSales.filter(s => 
+          !s.isCancelled && s.date.startsWith(dateStr)
+        );
+        currentTotal += currentSales.reduce((sum, s) => sum + (s.total || 0), 0);
+        
+        const prevDate = new Date(d);
+        prevDate.setDate(prevDate.getDate() - 28);
+        const prevStr = prevDate.toISOString().split('T')[0];
+        
+        const prevSales = allSales.filter(s => 
+          !s.isCancelled && s.date.startsWith(prevStr)
+        );
+        prevTotal += prevSales.reduce((sum, s) => sum + (s.total || 0), 0);
+      }
+      
+      currentData.push(currentTotal);
+      previousData.push(prevTotal);
+      labels.push(`الأسبوع ${4-i}`);
+    }
+  } else {
+    // آخر 12 شهر
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const monthStr = date.toISOString().slice(0, 7);
+      
+      const currentSales = allSales.filter(s => 
+        !s.isCancelled && s.date.startsWith(monthStr)
+      );
+      currentData.push(currentSales.reduce((sum, s) => sum + (s.total || 0), 0));
+      
+      const prevDate = new Date(date);
+      prevDate.setFullYear(prevDate.getFullYear() - 1);
+      const prevStr = prevDate.toISOString().slice(0, 7);
+      
+      const prevSales = allSales.filter(s => 
+        !s.isCancelled && s.date.startsWith(prevStr)
+      );
+      previousData.push(prevSales.reduce((sum, s) => sum + (s.total || 0), 0));
+      
+      labels.push(date.toLocaleDateString('ar-DZ', { month: 'short' }));
+    }
+  }
+  
+  // إنشاء أو تحديث الرسم البياني
+  if (salesChart) {
+    salesChart.destroy();
+  }
+  
+  salesChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'هذه الفترة',
+          data: currentData,
+          backgroundColor: '#7c3aed',
+          borderRadius: 6,
+          barPercentage: 0.6
+        },
+        {
+          label: 'الفترة السابقة',
+          data: previousData,
+          backgroundColor: 'rgba(124, 58, 237, 0.3)',
+          borderRadius: 6,
+          barPercentage: 0.6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)'
+          },
+          ticks: {
+            callback: function(value) {
+              return window.currencyFormatter.formatWithoutSymbol(value);
+            }
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      }
+    }
+  });
+}
+
+// ============================================================
+//  مؤشر صحة المتجر
+// ============================================================
+async function updateHealthMeter() {
+  const today = window.dateUtils.today();
+  
+  // حساب النقاط
+  let score = 100;
+  
+  // خصم الديون
+  const totalDebts = allDebts.filter(d => !d.isPaid).reduce((sum, d) => sum + (d.amount || 0), 0);
+  const todayRevenue = allSales
+    .filter(s => !s.isCancelled && s.date.startsWith(today))
+    .reduce((sum, s) => sum + (s.paid || 0), 0);
+  
+  if (todayRevenue > 0) {
+    const debtRatio = totalDebts / todayRevenue;
+    score -= Math.min(40, debtRatio * 100);
+  }
+  
+  // خصم المخزون المنخفض
+  const lowStock = allProducts.filter(p => p.quantity > 0 && p.quantity <= 5).length;
+  score -= Math.min(20, lowStock * 2);
+  
+  // خصم المصاريف
+  const todayExpenses = allExpenses.filter(e => e.date?.startsWith(today) && e.isPaid)
+    .reduce((sum, e) => sum + (e.amount || 0), 0);
+  
+  if (todayRevenue > 0) {
+    const expRatio = todayExpenses / todayRevenue;
+    score -= Math.min(30, expRatio * 50);
+  }
+  
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  
+  // تحديث العداد
+  const circumference = 2 * Math.PI * 45;
+  const offset = circumference - (score / 100) * circumference;
+  document.getElementById('gaugeFill').style.strokeDashoffset = offset;
+  
+  // تحديث لون العداد
+  let color = '#10b981';
+  if (score < 60) color = '#f59e0b';
+  if (score < 30) color = '#ef4444';
+  document.getElementById('gaugeFill').style.stroke = color;
+  
+  document.getElementById('healthScore').textContent = score;
+  
+  // تحديث الأشرطة
+  const liquidity = Math.min(100, (todayRevenue / (todayRevenue + totalDebts + 1)) * 100);
+  document.getElementById('liquidityBar').style.width = liquidity + '%';
+  
+  const stockHealth = Math.min(100, (allProducts.filter(p => p.quantity > 5).length / allProducts.length) * 100);
+  document.getElementById('stockBar').style.width = (stockHealth || 0) + '%';
+  
+  const debtHealth = Math.min(100, (totalDebts / (todayRevenue + 1)) * 100);
+  document.getElementById('debtBar').style.width = debtHealth + '%';
+}
+
+// ============================================================
+//  تصنيف ABC
+// ============================================================
+async function updateABC() {
+  // تجميع مبيعات المنتجات
+  const productSales = {};
+  
+  allItems.forEach(item => {
+    if (!item.productId) return;
+    if (!productSales[item.productId]) {
+      productSales[item.productId] = {
+        name: item.productName,
+        total: 0,
+        quantity: 0
+      };
+    }
+    productSales[item.productId].total += item.total || 0;
+    productSales[item.productId].quantity += item.quantity || 0;
+  });
+  
+  const sorted = Object.values(productSales).sort((a, b) => b.total - a.total);
+  const grandTotal = sorted.reduce((sum, p) => sum + p.total, 0);
+  
+  let cumulative = 0;
+  const abcList = document.getElementById('abcList');
+  
+  if (sorted.length === 0) {
+    abcList.innerHTML = '<div style="text-align:center; padding:30px;">لا توجد بيانات</div>';
+    return;
+  }
+  
+  abcList.innerHTML = sorted.slice(0, 15).map(p => {
+    cumulative += p.total;
+    const cumPercent = (cumulative / grandTotal) * 100;
+    const percent = (p.total / grandTotal) * 100;
+    
+    let category = 'C';
+    let categoryClass = 'abc-c';
+    if (cumPercent <= 80) {
+      category = 'A';
+      categoryClass = 'abc-a';
+    } else if (cumPercent <= 95) {
+      category = 'B';
+      categoryClass = 'abc-b';
+    }
+    
+    return `
+      <div class="abc-item">
+        <div class="abc-badge ${categoryClass}">${category}</div>
+        <span class="abc-name">${window.sanitizer.escape(p.name)}</span>
+        <span class="abc-value">${window.currencyFormatter.formatWithoutSymbol(p.total)}</span>
+        <span class="abc-percent">${percent.toFixed(1)}%</span>
+      </div>
+    `;
+  }).join('');
+  
+  // أكثر المنتجات مبيعاً
+  const topProducts = document.getElementById('topProducts');
+  topProducts.innerHTML = sorted.slice(0, 10).map((p, i) => `
+    <div class="abc-item">
+      <div class="abc-badge" style="background:rgba(124,58,237,0.2); color:#7c3aed;">${i+1}</div>
+      <span class="abc-name">${window.sanitizer.escape(p.name)}</span>
+      <span class="abc-value">${p.quantity}</span>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+//  آخر المبيعات
+// ============================================================
+async function updateRecentSales() {
+  // ✅ استبعاد وصولات التسديد الكاملة فقط
+  const recent = allSales
+    .filter(s =>
+      !s.isCancelled &&
+      s.invoiceKind !== 'settlement'
+    )
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 10);
+  
+  const tbody = document.getElementById('recentSales');
+  
+  if (recent.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد مبيعات</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = recent.map(sale => {
+    const customer = allCustomers.find(c => c.id === sale.customerId);
+
+    let statusClass = 'status-paid';
+    let statusText = 'نقدي';
+
+    if (sale.invoiceKind === 'settlement') {
+      statusClass = 'status-settled';
+      statusText = 'تسديد دين';
+    } else if (sale.invoiceKind === 'partial') {
+      statusClass = 'status-partial';
+      statusText = 'تسديد جزئي';
+    } else if (sale.isDebt && sale.paid === 0) {
+      statusClass = 'status-debt';
+      statusText = 'دين';
+    } else if (sale.isDebt && sale.paid > 0) {
+      statusClass = 'status-partial';
+      statusText = 'جزئي';
+    }
+
+    return `
+      <tr>
+        <td>${sale.invoiceNumber || '—'}</td>
+        <td>${window.dateUtils.formatDateTime(sale.date)}</td>
+        <td>${customer ? customer.name : '—'}</td>
+        <td>${window.currencyFormatter.formatWithoutSymbol(sale.total)}</td>
+        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ============================================================
+//  تغيير الفترة
+// ============================================================
+function setPeriod(period) {
+  currentPeriod = period;
+  
+  document.querySelectorAll('.period-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  
+  updateChart();
+}
+
+// ============================================================
+//  التقرير اليومي
+// ============================================================
+async function loadDailyReport() {
+  const date = document.getElementById('dailyDate').value;
+
+  // ✅ مبيعات حقيقية — بدون وصولات التسديد القديم
+  const daySales = allSales.filter(s =>
+    !s.isCancelled &&
+    s.date.startsWith(date) &&
+    s.invoiceKind !== 'settlement'
+  );
+
+  // ✅ تسديدات الديون من debtPayments (أدق من transactions)
+  const dayDebtPmts = allDebtPayments.filter(p => p.date.startsWith(date));
+  const settledToday = dayDebtPmts.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+  // ✅ الحسابات المحاسبية الصحيحة
+  const totalSales   = daySales.reduce((sum, s) => sum + (s.total || 0), 0);
+  const salesCash    = daySales.reduce((sum, s) => sum + (s.paid  || 0), 0);
+  const totalCash    = salesCash + settledToday;
+  const totalNewDebt = daySales.reduce((sum, s) => sum + Math.max(0,(s.total||0)-(s.paid||0)), 0);
+  const count = daySales.length;
+
+  // ✅ مصاريف اليوم — include_in_reports = true فقط
+  const dayExpenses = allExpenses.filter(e =>
+    e.date?.startsWith(date) &&
+    e.isPaid &&
+    e.include_in_reports === true
+  );
+  const expensesTotal = dayExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  // ✅ ربح المبيعات النقدية — تكلفة تناسبية لما دُفع فعلاً
+  let cashSalesProfit = 0;
+  for (const sale of daySales.filter(s => (s.paid || 0) > 0)) {
+    const cost = calcSaleCost(sale.id);
+    const paidRatio = sale.total > 0 ? (sale.paid / sale.total) : 1;
+    cashSalesProfit += (sale.paid || 0) - (cost * paidRatio);
+  }
+
+  // ✅ ربح تسديدات الديون — تناسبي
+  const debtPaymentsProfit = calcDebtPaymentsProfit(date);
+
+  const profit = cashSalesProfit + debtPaymentsProfit - expensesTotal;
+
+  document.getElementById('dailyTotal').textContent    = window.currencyFormatter.format(totalSales);
+  document.getElementById('dailyCash').textContent     = window.currencyFormatter.format(totalCash);
+  document.getElementById('dailyNewDebt').textContent  = window.currencyFormatter.format(totalNewDebt);
+  document.getElementById('dailyCount').textContent    = count;
+  document.getElementById('dailyExpenses').textContent = window.currencyFormatter.format(expensesTotal);
+  document.getElementById('dailyProfit').textContent   = window.currencyFormatter.format(profit);
+  
+  // عرض تفاصيل المبيعات
+  const tbody = document.getElementById('dailySalesList');
+  
+  if (daySales.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">لا توجد مبيعات في هذا اليوم</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = daySales.map(sale => {
+    const customer = allCustomers.find(c => c.id === sale.customerId);
+    const items = allItems.filter(i => i.saleId === sale.id);
+    const productsList = items.map(i => i.productName).join('، ').substring(0, 30) + (items.length > 1 ? '...' : '');
+    
+    // ✅ تصنيف صحيح بناءً على paid و isDebt
+    let statusClass = 'status-paid';
+    let statusText  = 'نقدي ✅';
+    if (sale.isDebt && (sale.paid || 0) === 0) {
+      statusClass = 'status-debt';
+      statusText  = 'دين 🔴';
+    } else if (sale.isDebt && (sale.paid || 0) > 0) {
+      statusClass = 'status-partial';
+      statusText  = 'جزئي 🟡';
+    }
+    
+    const cashAmount = sale.paid || 0;
+    const debtAmount = Math.max(0, (sale.total || 0) - cashAmount);
+    
+    const time = new Date(sale.date).toLocaleTimeString('ar-DZ', {
+      hour: '2-digit', minute: '2-digit'
+    });
+    
+    return `
+      <tr>
+        <td>${time}</td>
+        <td>${sale.invoiceNumber || '—'}</td>
+        <td>${customer ? window.sanitizer.escape(customer.name) : '—'}</td>
+        <td>${window.sanitizer.escape(productsList)}</td>
+        <td>${window.currencyFormatter.formatWithoutSymbol(sale.total)}</td>
+        <td style="color:var(--success);font-weight:700;">${cashAmount > 0 ? window.currencyFormatter.formatWithoutSymbol(cashAmount) : '—'}</td>
+        <td style="color:var(--danger);font-weight:700;">${debtAmount > 0 ? window.currencyFormatter.formatWithoutSymbol(debtAmount) : '—'}</td>
+        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+        <td>
+          <button class="action-btn" onclick="printSaleInvoice(${sale.id})" title="طباعة">
+            <i class="fa-solid fa-print"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+// ============================================================
+//  طباعة التقرير اليومي
+// ============================================================
+function printDailyReport() {
+  const date = document.getElementById('dailyDate').value;
+  const formattedDate = window.dateUtils.formatDate(date);
+  
+  const total    = document.getElementById('dailyTotal').textContent;
+  const cash     = document.getElementById('dailyCash').textContent;
+  const debt     = document.getElementById('dailyNewDebt').textContent;
+  const count    = document.getElementById('dailyCount').textContent;
+  const expenses = document.getElementById('dailyExpenses').textContent;
+  const profit   = document.getElementById('dailyProfit').textContent;
+  
+  const printWindow = window.open('', '_blank', 'width=400,height=600');
+  
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>تقرير يومي - ${formattedDate}</title>
+      <style>
+        body { font-family: 'Cairo', sans-serif; padding: 20px; }
+        h1 { font-size: 18px; text-align: center; margin-bottom: 5px; }
+        .date { text-align: center; color: #666; margin-bottom: 20px; }
+        .stat { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #ddd; }
+        .stat-label { font-weight: bold; }
+        .stat-value { color: #7c3aed; font-weight: bold; }
+        .total { font-size: 16px; background: #f0f0f0; padding: 10px; margin-top: 20px; }
+        hr { margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <h1>تقرير المبيعات اليومي</h1>
+      <div class="date">${formattedDate}</div>
+      
+      <div class="stat">
+        <span class="stat-label">إجمالي المبيعات:</span>
+        <span class="stat-value">${total}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">نقدي مقبوض:</span>
+        <span class="stat-value" style="color:#16a34a;">${cash}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">ديون جديدة:</span>
+        <span class="stat-value" style="color:#dc2626;">${debt}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">عدد الفواتير:</span>
+        <span class="stat-value">${count}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">المصاريف:</span>
+        <span class="stat-value">${expenses}</span>
+      </div>
+      <div class="stat total">
+        <span class="stat-label">صافي الربح:</span>
+        <span class="stat-value">${profit}</span>
+      </div>
+      
+      <hr>
+      <p style="text-align: center; font-size: 12px; color: #999;">تمت الطباعة بواسطة HP-POS</p>
+      
+      <script>
+        window.onload = function() { window.print(); setTimeout(window.close, 1000); }
+      <\/script>
+    </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+}
+
+// ============================================================
+//  الديون
+// ============================================================
+async function loadDebts(filter = 'all') {
+  let debts = [...allDebts];
+  
+  if (filter === 'active') {
+    debts = debts.filter(d => !d.isPaid);
+  } else if (filter === 'paid') {
+    debts = debts.filter(d => d.isPaid);
+  }
+  
+  debts.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  const total = debts.filter(d => !d.isPaid).reduce((sum, d) => sum + (d.amount || 0), 0);
+  document.getElementById('totalDebts').textContent = window.currencyFormatter.format(total);
+  
+  const tbody = document.getElementById('debtsList');
+  
+  if (debts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">لا توجد ديون</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = debts.map(debt => {
+    const customer = allCustomers.find(c => c.id === debt.customerId);
+    const sale = allSales.find(s => s.id === debt.saleId);
+    const days = window.dateUtils.daysBetween(debt.date);
+    
+    const statusClass = debt.isPaid ? 'status-paid' : (days > 30 ? 'status-debt' : 'status-partial');
+    const statusText = debt.isPaid ? 'مسدد' : (days > 30 ? 'متأخر' : 'قائم');
+    
+    const original = debt.originalAmount || debt.amount;
+    const paid = original - debt.amount;
+    
+    return `
+      <tr>
+        <td>${window.dateUtils.formatDate(debt.date)}</td>
+        <td>${customer ? customer.name : '—'}</td>
+        <td>${customer ? customer.phone : '—'}</td>
+        <td>${sale ? sale.invoiceNumber : '—'}</td>
+        <td>${window.currencyFormatter.formatWithoutSymbol(original)}</td>
+        <td>${window.currencyFormatter.formatWithoutSymbol(debt.amount)}</td>
+        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+        <td>
+          <button class="action-btn" onclick="viewCustomer(${debt.customerId})" title="عرض الزبون">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterDebts(value) {
+  loadDebts(value);
+}
+
+// ============================================================
+//  عرض زبون — تنقل إلى customers.html مع تمييزه
+// ============================================================
+function viewCustomer(customerId) {
+  if (!customerId) return;
+  window.location.href = `customers.html?highlight=${customerId}`;
+}
+
+// ============================================================
+//  تصدير المحاسبة — CSV
+// ============================================================
+async function exportAccounting() {
+  const date = document.getElementById('accDate').value;
+  if (!date) { window.toast.show('اختر تاريخاً أولاً', 'warning'); return; }
+
+  const daySales = allSales.filter(s => !s.isCancelled && s.date.startsWith(date));
+  const dayExpenses = allExpenses.filter(e => e.date?.startsWith(date) && e.isPaid);
+  const dayDebts = allDebts.filter(d => d.date.startsWith(date));
+
+  const revenue  = daySales.reduce((s, x) => s + (x.paid  || 0), 0);
+  const totalSales = daySales.reduce((s, x) => s + (x.total || 0), 0);
+
+  let cost = 0;
+  for (const sale of daySales.filter(s => (s.paid || 0) > 0)) {
+    const items = allItems.filter(i => i.saleId === sale.id);
+    for (const item of items) {
+      const product = allProducts.find(p => p.id === item.productId);
+      cost += (product?.buyPrice || 0) * item.quantity;
+    }
+  }
+
+  const expensesTotal = dayExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const profit = revenue - cost - expensesTotal;
+
+  // بناء CSV
+  const rows = [
+    ['\uFEFF' + 'نوع البند', 'التفاصيل', 'المبلغ'],
+    ['إجمالي المبيعات', `${daySales.length} فاتورة`, totalSales.toFixed(2)],
+    ['نقدي مقبوض', '', revenue.toFixed(2)],
+    ['تكلفة البضاعة', '', cost.toFixed(2)],
+    ...dayExpenses.map(e => ['مصروف', `${e.category}${e.note ? ' - ' + e.note : ''}`, e.amount.toFixed(2)]),
+    ['صافي الربح', '', profit.toFixed(2)],
+    [''],
+    ['الديون الجديدة', `${dayDebts.length} دين`, dayDebts.reduce((s, d) => s + (d.amount || 0), 0).toFixed(2)],
+  ];
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `محاسبة_${date}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  window.toast.show('✅ تم تصدير ملف CSV', 'success');
+}
+
+// ============================================================
+//  تقرير العائلات
+// ============================================================
+async function loadFamiliesReport() {
+  const date = document.getElementById('familiesDate').value;
+  
+  const daySales = allSales.filter(s => 
+    !s.isCancelled && s.date.startsWith(date)
+  );
+  
+  const dayItemIds = new Set(daySales.map(s => s.id));
+  const dayItems = allItems.filter(i => dayItemIds.has(i.saleId));
+  
+  // تجميع حسب العائلة
+  const familyMap = {};
+  
+  dayItems.forEach(item => {
+    const product = allProducts.find(p => p.id === item.productId);
+    const familyId = product?.familyId;
+    const family = allFamilies.find(f => f.id === familyId);
+    const familyName = family ? family.name : 'أخرى';
+    
+    if (!familyMap[familyName]) {
+      familyMap[familyName] = {
+        count: 0,
+        quantity: 0,
+        total: 0
+      };
+    }
+    
+    familyMap[familyName].count++;
+    familyMap[familyName].quantity += item.quantity || 0;
+    familyMap[familyName].total += item.total || 0;
+  });
+  
+  const sorted = Object.entries(familyMap).sort((a, b) => b[1].total - a[1].total);
+  const grandTotal = sorted.reduce((sum, [_, data]) => sum + data.total, 0);
+  
+  // عرض الجدول
+  const tbody = document.getElementById('familiesList');
+  
+  if (sorted.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد مبيعات</td></tr>';
+  } else {
+    tbody.innerHTML = sorted.map(([name, data]) => {
+      const percent = grandTotal > 0 ? (data.total / grandTotal * 100).toFixed(1) : 0;
+      
+      return `
+        <tr>
+          <td>${window.sanitizer.escape(name)}</td>
+          <td>${data.count}</td>
+          <td>${data.quantity}</td>
+          <td>${window.currencyFormatter.formatWithoutSymbol(data.total)}</td>
+          <td>${percent}%</td>
+        </tr>
+      `;
+    }).join('');
+  }
+  
+  // رسم بياني دائري
+  const ctx = document.getElementById('familiesChart').getContext('2d');
+  
+  if (familiesChart) {
+    familiesChart.destroy();
+  }
+  
+  familiesChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: sorted.slice(0, 8).map(([name]) => name),
+      datasets: [{
+        data: sorted.slice(0, 8).map(([_, data]) => data.total),
+        backgroundColor: [
+          '#7c3aed', '#2563eb', '#059669', '#d97706',
+          '#dc2626', '#7c3aed', '#0891b2', '#be123c'
+        ],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: 'var(--text-secondary)',
+            font: { size: 11 }
+          }
+        }
+      },
+      cutout: '60%'
+    }
+  });
+}
+
+// ============================================================
+//  تقرير المنتجات
+// ============================================================
+async function loadProductsReport() {
+  const date = document.getElementById('productsDate').value;
+  
+  const daySales = allSales.filter(s => 
+    !s.isCancelled && s.date.startsWith(date)
+  );
+  
+  const dayItemIds = new Set(daySales.map(s => s.id));
+  const dayItems = allItems.filter(i => dayItemIds.has(i.saleId));
+  
+  // تجميع حسب المنتج
+  const productMap = {};
+  
+  dayItems.forEach(item => {
+    const name = item.productName || 'منتج';
+    
+    if (!productMap[name]) {
+      productMap[name] = {
+        quantity: 0,
+        total: 0
+      };
+    }
+    
+    productMap[name].quantity += item.quantity || 0;
+    productMap[name].total += item.total || 0;
+  });
+  
+  const sorted = Object.entries(productMap).sort((a, b) => b[1].total - a[1].total);
+  const grandTotal = sorted.reduce((sum, [_, data]) => sum + data.total, 0);
+  
+  // عرض الجدول
+  const tbody = document.getElementById('productsList');
+  
+  if (sorted.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد مبيعات</td></tr>';
+  } else {
+    tbody.innerHTML = sorted.slice(0, 100).map(([name, data], index) => {
+      const percent = grandTotal > 0 ? (data.total / grandTotal * 100).toFixed(1) : 0;
+      
+      return `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${window.sanitizer.escape(name)}</td>
+          <td>${data.quantity}</td>
+          <td>${window.currencyFormatter.formatWithoutSymbol(data.total)}</td>
+          <td>${percent}%</td>
+        </tr>
+      `;
+    }).join('');
+  }
+}
+
+// ============================================================
+//  المحاسبة
+// ============================================================
+async function loadAccounting() {
+  const date = document.getElementById('accDate').value;
+  
+  // ✅ مبيعات حقيقية فقط
+  const daySales = allSales.filter(s =>
+    !s.isCancelled &&
+    s.date.startsWith(date) &&
+    s.invoiceKind !== 'settlement'
+  );
+
+  // ✅ تسديدات الديون من debtPayments
+  const dayDebtPmts = allDebtPayments.filter(p => p.date.startsWith(date));
+  const settledToday = dayDebtPmts.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+  const salesCash = daySales.reduce((sum, s) => sum + (s.paid || 0), 0);
+  const revenue   = salesCash + settledToday;
+  const count     = daySales.length;
+
+  // ✅ ربح المبيعات النقدية — تناسبي
+  let cashSalesProfit = 0;
+  for (const sale of daySales.filter(s => (s.paid || 0) > 0)) {
+    const cost = calcSaleCost(sale.id);
+    const paidRatio = sale.total > 0 ? (sale.paid / sale.total) : 1;
+    cashSalesProfit += (sale.paid || 0) - (cost * paidRatio);
+  }
+
+  // ✅ ربح تسديدات الديون — تناسبي
+  const debtPaymentsProfit = calcDebtPaymentsProfit(date);
+
+  // ✅ المصاريف — include_in_reports = true فقط
+  const dayExpenses = allExpenses.filter(e =>
+    e.date?.startsWith(date) &&
+    e.isPaid &&
+    e.include_in_reports === true
+  );
+  const expensesTotal = dayExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  // الديون القائمة
+  const totalDebts = allDebts.filter(d => !d.isPaid).reduce((sum, d) => sum + (d.amount || 0), 0);
+
+  const cost   = revenue - cashSalesProfit - debtPaymentsProfit;
+  const profit = cashSalesProfit + debtPaymentsProfit - expensesTotal;
+  
+  document.getElementById('accRevenue').textContent = window.currencyFormatter.format(revenue);
+  document.getElementById('accCost').textContent = window.currencyFormatter.format(cost);
+  document.getElementById('accExpenses').textContent = window.currencyFormatter.format(expensesTotal);
+  document.getElementById('accProfit').textContent = window.currencyFormatter.format(profit);
+  document.getElementById('accDebts').textContent = window.currencyFormatter.format(totalDebts);
+  document.getElementById('accCount').textContent = count;
+  
+  // عرض آخر المصاريف
+  const recentExpenses = dayExpenses
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 10);
+  
+  const expDiv = document.getElementById('recentExpenses');
+  
+  if (recentExpenses.length === 0) {
+    expDiv.innerHTML = '<div style="text-align:center; padding:20px;">لا توجد مصاريف</div>';
+  } else {
+    expDiv.innerHTML = recentExpenses.map(e => `
+      <div class="expense-item">
+        <span class="expense-category">${window.sanitizer.escape(e.category)}</span>
+        <span class="expense-note">${e.note || ''}</span>
+        <span class="expense-amount">${window.currencyFormatter.formatWithoutSymbol(e.amount)}</span>
+      </div>
+    `).join('');
+  }
+}
+
+// ============================================================
+//  إضافة مصروف
+// ============================================================
+async function addExpense() {
+  const category = document.getElementById('expCategory').value.trim();
+  const amount = parseFloat(document.getElementById('expAmount').value);
+  const note = document.getElementById('expNote').value.trim();
+  const date = document.getElementById('accDate').value;
+  
+  if (!category) {
+    window.toast.show('أدخل فئة المصروف', 'warning');
+    return;
+  }
+  
+  if (!amount || amount <= 0) {
+    window.toast.show('أدخل مبلغاً صحيحاً', 'warning');
+    return;
+  }
+  
+  await window.dbManager.add('expenses', {
+    category,
+    amount,
+    note,
+    date,
+    isPaid: true,
+    paidDate: window.dateUtils.now(),
+    createdAt: window.dateUtils.now()
+  });
+  
+  document.getElementById('expCategory').value = '';
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expNote').value = '';
+  
+  await loadAllData();
+  await loadAccounting();
+  
+  window.toast.show('تم إضافة المصروف', 'success');
+}
+
+// ============================================================
+//  الأرشيف
+// ============================================================
+async function loadArchive() {
+  await filterArchive();
+}
+
+async function filterArchive() {
+  const search = document.getElementById('archiveSearch').value.toLowerCase();
+  const from = document.getElementById('archiveFrom').value;
+  const to = document.getElementById('archiveTo').value;
+  
+  let filtered = allSales.filter(s => !s.isCancelled);
+  
+  if (search) {
+    filtered = filtered.filter(s => {
+      const customer = allCustomers.find(c => c.id === s.customerId);
+      return s.invoiceNumber?.toLowerCase().includes(search) ||
+             customer?.name?.toLowerCase().includes(search);
+    });
+  }
+  
+  if (from) {
+    filtered = filtered.filter(s => s.date >= from);
+  }
+  
+  if (to) {
+    filtered = filtered.filter(s => s.date <= to + 'T23:59:59');
+  }
+  
+  filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  const tbody = document.getElementById('archiveList');
+  
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">لا توجد مبيعات</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = filtered.slice(0, 100).map(sale => {
+    const customer = allCustomers.find(c => c.id === sale.customerId);
+    const items = allItems.filter(i => i.saleId === sale.id);
+    const productsList = items.map(i => i.productName).join('، ').substring(0, 30) + (items.length > 1 ? '...' : '');
+    
+    let statusClass = 'status-paid';
+    let statusText = 'مسددة';
+    
+    if (sale.isDebt && sale.paid === 0) {
+      statusClass = 'status-debt';
+      statusText = 'دين';
+    } else if (sale.isDebt && sale.paid > 0) {
+      statusClass = 'status-partial';
+      statusText = 'جزئي';
+    }
+    
+    return `
+      <tr>
+        <td>${window.dateUtils.formatDate(sale.date)}</td>
+        <td>${sale.invoiceNumber || '—'}</td>
+        <td>${customer ? customer.name : '—'}</td>
+        <td>${productsList}</td>
+        <td>${window.currencyFormatter.formatWithoutSymbol(sale.total)}</td>
+        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+        <td>
+          <button class="action-btn" onclick="printSaleInvoice(${sale.id})" title="طباعة">
+            <i class="fa-solid fa-print"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ============================================================
+//  ساعات الذروة
+// ============================================================
+async function loadPeakHours() {
+  const from = document.getElementById('peakFrom').value;
+  const to = document.getElementById('peakTo').value;
+  
+  const sales = allSales.filter(s => {
+    if (!from || !to) return true;
+    return s.date >= from && s.date <= to + 'T23:59:59';
+  });
+  
+  // تجميع حسب الساعة
+  const hourData = Array(24).fill(0).map((_, i) => ({
+    hour: i,
+    count: 0,
+    total: 0
+  }));
+  
+  sales.forEach(sale => {
+    const hour = new Date(sale.date).getHours();
+    hourData[hour].count++;
+    hourData[hour].total += sale.total || 0;
+  });
+  
+  // عرض الشبكة
+  const grid = document.getElementById('peakHoursGrid');
+  const maxCount = Math.max(...hourData.map(h => h.count));
+  
+  grid.innerHTML = hourData.map(h => {
+    const percent = maxCount > 0 ? (h.count / maxCount * 100) : 0;
+    const hour12 = h.hour % 12 || 12;
+    const period = h.hour < 12 ? 'ص' : 'م';
+    
+    return `
+      <div class="peak-hour-item">
+        <div class="peak-hour">${hour12} ${period}</div>
+        <div class="peak-count">${h.count}</div>
+        <div class="peak-bar" style="width: ${percent}%"></div>
+        <div style="font-size:0.7rem; color:var(--text-secondary);">${window.currencyFormatter.formatWithoutSymbol(h.total)}</div>
+      </div>
+    `;
+  }).join('');
+  
+  // رسم بياني
+  const ctx = document.getElementById('peakChart').getContext('2d');
+  
+  if (peakChart) {
+    peakChart.destroy();
+  }
+  
+  peakChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: hourData.map(h => `${h.hour}:00`),
+      datasets: [{
+        label: 'عدد الفواتير',
+        data: hourData.map(h => h.count),
+        borderColor: '#7c3aed',
+        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)'
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      }
+    }
+  });
+}
+
+// ============================================================
+//  أداء البائعين
+// ============================================================
+async function loadSellers() {
+  const from = document.getElementById('sellerFrom').value;
+  const to = document.getElementById('sellerTo').value;
+  
+  const sales = allSales.filter(s => {
+    if (!from || !to) return true;
+    return s.date >= from && s.date <= to + 'T23:59:59';
+  });
+  
+  // تجميع حسب البائع
+  const sellerMap = {};
+  
+  sales.forEach(sale => {
+    const userId = sale.userId || 0;
+    if (!sellerMap[userId]) {
+      const user = allUsers.find(u => u.id === userId);
+      sellerMap[userId] = {
+        name: user ? user.username : 'غير معروف',
+        count: 0,
+        total: 0,
+        cash: 0,
+        debts: 0
+      };
+    }
+    
+    sellerMap[userId].count++;
+    sellerMap[userId].total += sale.total || 0;
+    
+    // ✅ النقدي = ما قُبض فعلاً | الدين = الفرق غير المسدد
+    const cashPaid = sale.paid || 0;
+    const debtPart = (sale.total || 0) - cashPaid;
+    sellerMap[userId].cash  += cashPaid;
+    if (debtPart > 0.001) sellerMap[userId].debts += debtPart;
+  });
+  
+  const sorted = Object.values(sellerMap).sort((a, b) => b.total - a.total);
+  
+  const tbody = document.getElementById('sellersList');
+  
+  if (sorted.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">لا توجد بيانات</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = sorted.map(s => {
+    const avg = s.count > 0 ? (s.total / s.count).toFixed(2) : 0;
+    
+    return `
+      <tr>
+        <td><b>${window.sanitizer.escape(s.name)}</b></td>
+        <td>${s.count}</td>
+        <td>${window.currencyFormatter.formatWithoutSymbol(s.total)}</td>
+        <td>${window.currencyFormatter.formatWithoutSymbol(s.cash)}</td>
+        <td>${window.currencyFormatter.formatWithoutSymbol(s.debts)}</td>
+        <td>${window.currencyFormatter.formatWithoutSymbol(avg)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ============================================================
+//  طباعة فاتورة
+// ============================================================
+async function printSaleInvoice(saleId) {
+  const sale     = allSales.find(s => s.id === saleId);
+  if (!sale) { window.toast.show('لم يتم العثور على الفاتورة', 'error'); return; }
+
+  const items    = allItems.filter(i => i.saleId === saleId);
+  const customer = allCustomers.find(c => c.id === sale.customerId);
+
+  const saleData = {
+    ...sale,
+    customerName:  customer?.name  || '',
+    customerPhone: customer?.phone || ''
+  };
+
+  // window.printInvoice مُصدَّرة من print.js
+  if (typeof window.printInvoice === 'function') {
+    await window.printInvoice(saleData, items);
+  } else {
+    window.toast.show('⚠️ وحدة الطباعة غير محمّلة (print.js)', 'error');
+  }
+}
+
+// ============================================================
+//  الإغلاق اليومي
+// ============================================================
+async function openDailyClose() {
+  const today  = window.dateUtils.today();              // 'YYYY-MM-DD'
+
+  // مبيعات اليوم (بدون وصولات التسديد القديم)
+  const todaySales = allSales.filter(s =>
+    !s.isCancelled &&
+    s.date.startsWith(today) &&
+    s.invoiceKind !== 'settlement'
+  );
+
+  const totalSales = todaySales.reduce((sum, s) => sum + (s.total || 0), 0);
+  const totalCash  = todaySales.reduce((sum, s) => sum + (s.paid  || 0), 0);
+  const totalDebt  = todaySales.reduce((sum, s) => sum + Math.max(0, (s.total||0) - (s.paid||0)), 0);
+  const count      = todaySales.length;
+
+  // مصاريف اليوم
+  const todayExp = allExpenses.filter(e =>
+    e.date?.startsWith(today) && e.isPaid && e.include_in_reports === true
+  );
+  const totalExp = todayExp.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  // ربح تقديري = نقدي − تكلفة تناسبية − مصاريف
+  let grossProfit = 0;
+  for (const sale of todaySales.filter(s => (s.paid || 0) > 0)) {
+    const cost = calcSaleCost(sale.id);
+    const ratio = sale.total > 0 ? sale.paid / sale.total : 1;
+    grossProfit += (sale.paid || 0) - cost * ratio;
+  }
+  const netProfit = grossProfit - totalExp;
+
+  // تعبئة Modal
+  const fmt = v => window.currencyFormatter.format(v);
+  document.getElementById('dcDate').textContent     = window.dateUtils.formatDate(today);
+  document.getElementById('dcTotal').textContent    = fmt(totalSales);
+  document.getElementById('dcCash').textContent     = fmt(totalCash);
+  document.getElementById('dcCount').textContent    = count + ' فاتورة';
+  document.getElementById('dcNewDebt').textContent  = fmt(totalDebt);
+  document.getElementById('dcExpenses').textContent = fmt(totalExp);
+  document.getElementById('dcProfit').textContent   = fmt(netProfit);
+
+  window.modalManager.open('dailyCloseModal');
+}
+
+async function confirmDailyClose() {
+  // منع النقر المزدوج
+  const btn = document.getElementById('dcConfirmBtn');
+  if (btn) btn.disabled = true;
+
+  try {
+    await window.resetDailyCounter();          // app.js → InvoiceCounter.resetDaily()
+    window.modalManager.close('dailyCloseModal');
+    window.toast.show(
+      '✅ تم الإغلاق اليومي — الفاتورة التالية ستكون #001',
+      'success', 4000
+    );
+    window.SoundManager?.play('sell');
+  } catch (e) {
+    window.toast.show('❌ خطأ أثناء إعادة العداد: ' + (e?.message || e), 'error');
+    window.SoundManager?.play('warning');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ============================================================
+//  تحديث الكل
+// ============================================================
+async function refreshDashboard() {
+  await loadAllData();
+  await updateSidebarValues();
+  await loadDashboard();
+  window.toast.show('تم تحديث البيانات', 'success');
+}
+
+// ============================================================
+//  تسجيل الخروج
+// ============================================================
+function doLogout() {
+  window.modalManager.confirm('هل تريد تسجيل الخروج؟').then(confirmed => {
+    if (confirmed) {
+      window.sessionManager.logout();
+    }
+  });
+}
+
+// ============================================================
+//  تقرير خسائر الصلاحية
+// ============================================================
+async function loadExpiryLossesReport() {
+  try {
+    const range   = document.getElementById('expiryLossRange')?.value || 'month';
+    const tbody   = document.getElementById('expiryLossesTbody');
+    const fmt     = window.currencyFormatter.format.bind(window.currencyFormatter);
+    const today   = window.dateUtils.today();
+
+    // تحديد نافذة التاريخ
+    let fromDate = '';
+    if (range === 'month')   fromDate = today.slice(0, 7) + '-01';
+    else if (range === '3months') {
+      const d = new Date(); d.setMonth(d.getMonth() - 3);
+      fromDate = d.toISOString().split('T')[0];
+    }
+    else if (range === 'year') fromDate = today.slice(0, 4) + '-01-01';
+
+    // جلب خسائر الصلاحية من expenses
+    const allExp = await window.dbManager.getAll('expenses');
+    let losses   = allExp.filter(e => e.source === 'expiry_loss');
+
+    if (fromDate) {
+      losses = losses.filter(e => e.date && e.date >= fromDate);
+    }
+
+    // ── بطاقات الملخص ────────────────────────────────────────
+    const totalLoss  = losses.reduce((s, e) => s + (e.amount || 0), 0);
+    const avgLoss    = losses.length > 0 ? totalLoss / losses.length : 0;
+
+    // أكثر منتج خسارة
+    const byProduct  = {};
+    losses.forEach(e => {
+      const name = (e.note || '').split(' — ')[0].replace('شطب صلاحية: ', '').trim()
+                   || e.note || '—';
+      byProduct[name] = (byProduct[name] || 0) + (e.amount || 0);
+    });
+    const topProduct = Object.entries(byProduct)
+      .sort((a, b) => b[1] - a[1])[0];
+
+    const s = id => document.getElementById(id);
+    if (s('elTotalLoss'))   s('elTotalLoss').textContent   = fmt(totalLoss);
+    if (s('elTotalCount'))  s('elTotalCount').textContent  = `${losses.length} عملية`;
+    if (s('elTopProduct'))  s('elTopProduct').textContent  =
+      topProduct ? `${topProduct[0]} (${fmt(topProduct[1])})` : '—';
+    if (s('elAvgLoss'))     s('elAvgLoss').textContent     =
+      losses.length > 0 ? fmt(avgLoss) : '—';
+
+    // ── الجدول التفصيلي ──────────────────────────────────────
+    if (!tbody) return;
+
+    if (losses.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align:center; padding:50px;
+              color:var(--text-secondary);">
+            <i class="fa-solid fa-circle-check"
+               style="font-size:2.5rem; color:var(--success); opacity:0.7;"></i>
+            <p style="margin-top:14px; font-weight:800;">
+              ✅ لا توجد خسائر صلاحية في هذه الفترة
+            </p>
+          </td>
+        </tr>`;
+      return;
+    }
+
+    // ترتيب من الأحدث للأقدم
+    losses.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    tbody.innerHTML = losses.map((e, idx) => {
+      const note = e.note || '—';
+      return `
+        <tr>
+          <td style="color:var(--text-secondary); font-weight:700;">${idx + 1}</td>
+          <td style="font-weight:800;">
+            ${window.sanitizer ? window.sanitizer.escape(
+                note.replace('شطب صلاحية: ', '').split(' — ')[0]
+              ) : note}
+          </td>
+          <td>
+            <span style="display:inline-block; background:rgba(239,68,68,0.12);
+              color:var(--danger); border:1px solid rgba(239,68,68,0.3);
+              border-radius:8px; padding:2px 10px; font-size:0.82rem; font-weight:800;">
+              ${fmt(e.amount || 0)}
+            </span>
+          </td>
+          <td style="color:var(--text-secondary);">
+            ${window.dateUtils.formatDate(e.date)}
+          </td>
+          <td style="color:var(--text-secondary); font-size:0.82rem;">
+            ${window.sanitizer ? window.sanitizer.escape(note) : note}
+          </td>
+        </tr>`;
+    }).join('');
+
+  } catch (err) {
+    console.error('[loadExpiryLossesReport]', err);
+    window.toast?.show('خطأ في تحميل تقرير الخسائر', 'error');
+  }
+}
+
+// ============================================================
+//  بدء التشغيل
+// ============================================================
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

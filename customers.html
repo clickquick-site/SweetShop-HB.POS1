@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="shortcut icon" href="favicon.svg"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HP-POS - إدارة الزبائن</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <style>
+    /* =========================================
+       تخطيط متطور لإدارة الزبائن
+    ========================================= */
+    .customers-layout {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: var(--bg-dark);
+    }
+
+    /* بطاقات الإحصائيات */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      transition: all 0.2s ease;
+    }
+
+    .stat-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .stat-icon.total {
+      background: rgba(124, 58, 237, 0.15);
+      color: #7c3aed;
+    }
+
+    .stat-icon.debt {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .stat-icon.clean {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .stat-content {
+      flex: 1;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 900;
+      font-family: 'Impact', sans-serif;
+      color: var(--text-primary);
+    }
+
+    .stat-sub {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* شريط البحث والتصفية */
+    .search-section {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrapper {
+      flex: 2;
+      min-width: 280px;
+      position: relative;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0 16px;
+      transition: all 0.2s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    .search-box i {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 14px 10px;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px;
+    }
+
+    .filter-tab {
+      padding: 8px 20px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      white-space: nowrap;
+    }
+
+    .filter-tab:hover {
+      background: var(--bg-medium);
+      color: var(--text-primary);
+    }
+
+    .filter-tab.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* بطاقات الزبائن */
+    .customers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .customer-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .customer-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 4px;
+      height: 100%;
+      transition: all 0.2s;
+    }
+
+    .customer-card.has-debt::before {
+      background: var(--danger);
+    }
+
+    .customer-card.no-debt::before {
+      background: var(--success);
+    }
+
+    .customer-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.15);
+    }
+
+    .customer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .customer-info {
+      flex: 1;
+    }
+
+    .customer-name {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .customer-name i {
+      color: var(--primary);
+      font-size: 0.9rem;
+    }
+
+    .customer-phone {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+    }
+
+    .customer-phone i {
+      color: var(--primary-light);
+      font-size: 0.8rem;
+    }
+
+    .customer-email {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
+
+    .debt-badge {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 1rem;
+      text-align: center;
+      min-width: 100px;
+    }
+
+    .debt-badge.has-debt {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .debt-badge.no-debt {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .debt-amount {
+      font-size: 1.2rem;
+      font-weight: 900;
+    }
+
+    .debt-label {
+      font-size: 0.7rem;
+      opacity: 0.8;
+    }
+
+    .customer-stats {
+      display: flex;
+      gap: 15px;
+      margin: 12px 0;
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-item {
+      flex: 1;
+      text-align: center;
+    }
+
+    .stat-item-value {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--primary-light);
+    }
+
+    .stat-item-label {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .debt-info {
+      background: var(--bg-dark);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+
+    .debt-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 0.85rem;
+    }
+
+    .debt-row:not(:last-child) {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .debt-date {
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+    }
+
+    .debt-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .action-btn {
+      flex: 1;
+      min-width: 80px;
+      padding: 8px 0;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .action-btn.primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .action-btn.success {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .action-btn.warning {
+      background: var(--warning);
+      color: #fff;
+    }
+
+    .action-btn.danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .action-btn.secondary {
+      background: var(--bg-input);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+
+    /* جدول سجل الدفعات */
+    .payments-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .payments-table th {
+      background: var(--bg-dark);
+      color: var(--text-secondary);
+      font-weight: 700;
+      padding: 12px 10px;
+      text-align: right;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .payments-table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .payments-table tbody tr:hover {
+      background: rgba(124, 58, 237, 0.05);
+    }
+
+    .payment-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .payment-full {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .payment-partial {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+
+    /* نموذج إضافة زبون */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full-width {
+      grid-column: span 2;
+    }
+
+    .form-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-label i {
+      color: var(--primary);
+      font-size: 0.8rem;
+    }
+
+    .form-input {
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      padding: 10px 14px;
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    /* نوافذ منبثقة */
+    .modal-lg {
+      max-width: 600px;
+    }
+
+    .debt-detail {
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 5px 0;
+    }
+
+    .debt-item {
+      background: var(--bg-dark);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .debt-item-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .debt-item-invoice {
+      font-weight: 700;
+      color: var(--primary-light);
+    }
+
+    .debt-item-amount {
+      font-weight: 900;
+      color: var(--danger);
+    }
+
+    .debt-item-days {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .debt-progress {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+
+    .debt-progress-fill {
+      height: 100%;
+      background: var(--success);
+      transition: width 0.3s;
+    }
+
+    .interest-preview {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin: 12px 0;
+    }
+
+    /* الترقيم الصفحات */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .page-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-btn:hover,
+    .page-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+<div class="bg-animated"></div>
+
+<div class="customers-layout">
+  <!-- الهيدر -->
+  <header class="app-header">
+    <button class="menu-btn" id="menuBtn">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <a href="sale.html" class="back-btn" title="واجهة البيع">
+      <i class="fa-solid fa-cash-register"></i>
+    </a>
+    
+    <span class="store-name" id="headerStoreName">جاري التحميل...</span>
+    
+    <div class="app-brand">
+      <span class="brand-title">HP-POS</span>
+      <span class="brand-clock" id="clockDisplay"></span>
+    </div>
+  </header>
+
+  <!-- المحتوى الرئيسي -->
+  <div style="flex:1; padding:20px; overflow-y:auto;">
+    
+    <!-- شريط الإجراءات العلوي -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h1 style="font-size:1.5rem; color:var(--primary-light); display:flex; align-items:center; gap:10px;">
+        <i class="fa-solid fa-users"></i>
+        <span>إدارة الزبائن</span>
+      </h1>
+      
+      <button class="btn btn-primary" onclick="openAddCustomerModal()">
+        <i class="fa-solid fa-plus"></i>
+        <span>إضافة زبون جديد</span>
+      </button>
+    </div>
+
+    <!-- بطاقات الإحصائيات -->
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- شريط البحث والتصفية -->
+    <div class="search-section">
+      <div class="search-wrapper">
+        <div class="search-box">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" id="customerSearch" 
+                 placeholder="ابحث بالاسم، الهاتف أو البريد..."
+                 oninput="filterCustomers()"/>
+          <i class="fa-solid fa-xmark" style="cursor:pointer; opacity:0.5;" onclick="clearSearch()"></i>
+        </div>
+      </div>
+
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setFilter('all')">كل الزبائن</button>
+        <button class="filter-tab" onclick="setFilter('debt')">مدينون</button>
+        <button class="filter-tab" onclick="setFilter('clean')">بدون ديون</button>
+      </div>
+    </div>
+
+    <!-- قائمة الزبائن -->
+    <div id="customersContainer" class="customers-grid"></div>
+
+    <!-- أزرار التنقل بين الصفحات -->
+    <div class="pagination" id="pagination">
+      <button class="page-btn" id="prevPage" onclick="changePage(-1)" disabled>
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+      <span id="pageNumbers"></span>
+      <button class="page-btn" id="nextPage" onclick="changePage(1)" disabled>
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Modal: إضافة/تعديل زبون ========== -->
+<div class="modal-overlay" id="customerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="customerModalTitle">
+        <i class="fa-solid fa-user-plus"></i> إضافة زبون جديد
+      </span>
+      <button class="modal-close" onclick="closeModal('customerModal')">✕</button>
+    </div>
+    
+    <input type="hidden" id="editCustomerId"/>
+    
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-user"></i>
+          <span>الاسم الكامل *</span>
+        </label>
+        <input type="text" class="form-input" id="customerName" 
+               placeholder="أدخل اسم الزبون"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-phone"></i>
+          <span>رقم الهاتف *</span>
+        </label>
+        <input type="tel" class="form-input" id="customerPhone" 
+               placeholder="05XX XX XX XX"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-envelope"></i>
+          <span>البريد الإلكتروني</span>
+        </label>
+        <input type="email" class="form-input" id="customerEmail" 
+               placeholder="example@domain.com"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-location-dot"></i>
+          <span>العنوان</span>
+        </label>
+        <input type="text" class="form-input" id="customerAddress" 
+               placeholder="العنوان (اختياري)"/>
+      </div>
+
+      <div class="form-group full-width">
+        <label class="form-label">
+          <i class="fa-solid fa-note-sticky"></i>
+          <span>ملاحظات</span>
+        </label>
+        <textarea class="form-input" id="customerNotes" rows="2" 
+                  placeholder="ملاحظات إضافية..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-success" onclick="saveCustomer()">
+        <i class="fa-solid fa-floppy-disk"></i> حفظ
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('customerModal')">
+        إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Modal: تفاصيل الديون ========== -->
+<div class="modal-overlay" id="debtModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="debtModalTitle">
+        <i class="fa-solid fa-hand-holding-dollar"></i> تفاصيل الديون
+      </span>
+      <button class="modal-close" onclick="closeModal('debtModal')">✕</button>
+    </div>
+
+    <div class="debt-detail" id="debtDetail"></div>
+
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="showPaymentHistory()">
+        <i class="fa-solid fa-clock-rotate-left"></i> سجل الدفعات
+      </button>
+      <button class="btn btn-warning" onclick="openInterestModal()">
+        <i class="fa-solid fa-percent"></i> إضافة فائدة
+      </button>
+      <button class="btn btn-info" id="sendDebtEmailBtn"
+              onclick="sendDebtEmail()" style="display:none;">
+        <i class="fa-solid fa-envelope"></i> إرسال بريد
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('debtModal')">
+        إغلاق
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Modal: تسديد دين ========== -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-title">
+        <i class="fa-solid fa-money-bill"></i> تسديد دين
+      </span>
+      <button class="modal-close" onclick="closeModal('paymentModal')">✕</button>
+    </div>
+
+    <div id="paymentInfo" style="background:var(--bg-dark); border-radius:8px; padding:12px; margin:15px 0;"></div>
+
+    <div class="form-group">
+      <label class="form-label">المبلغ المدفوع</label>
+      <input type="number" class="form-input" id="paymentAmount" 
+             placeholder="0.00" min="0" step="0.01" style="font-size:1.2rem; text-align:center;"
+             oninput="updatePaymentRemaining()"/>
+    </div>
+
+    <div id="paymentRemaining" style="text-align:center; font-weight:700; margin:10px 0;"></div>
+
+    <div class="form-group">
+      <label class="form-label">ملاحظة</label>
+      <input type="text" class="form-input" id="paymentNote" placeholder="اختياري"/>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-success" onclick="confirmPayment()">
+        <i class="fa-solid fa-check"></i> تأكيد
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('paymentModal')">
+        إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Modal: سجل الدفعات ========== -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="historyModalTitle">
+        <i class="fa-solid fa-clock-rotate-left"></i> سجل الدفعات
+      </span>
+      <button class="modal-close" onclick="closeModal('historyModal')">✕</button>
+    </div>
+
+    <div style="max-height:400px; overflow-y:auto;">
+      <table class="payments-table">
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>الفاتورة</th>
+            <th>المبلغ</th>
+            <th>المتبقي</th>
+            <th>النوع</th>
+            <th>ملاحظة</th>
+          </tr>
+        </thead>
+        <tbody id="paymentsList"></tbody>
+      </table>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('historyModal')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Modal: إضافة فائدة ========== -->
+<div class="modal-overlay" id="interestModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-title">
+        <i class="fa-solid fa-percent"></i> إضافة فائدة على الديون
+      </span>
+      <button class="modal-close" onclick="closeModal('interestModal')">✕</button>
+    </div>
+
+    <div id="interestInfo" style="background:var(--bg-dark); border-radius:8px; padding:12px; margin:15px 0;"></div>
+
+    <div class="form-group">
+      <label class="form-label">طريقة الحساب</label>
+      <select class="form-input" id="interestType" onchange="calculateInterest()">
+        <option value="daily">يومية (نسبة × عدد الأيام)</option>
+        <option value="monthly">شهرية (نسبة × عدد الأشهر)</option>
+        <option value="fixed">مبلغ ثابت</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="interestRateGroup">
+      <label class="form-label">نسبة الفائدة (%)</label>
+      <input type="number" class="form-input" id="interestRate" 
+             value="2" min="0" max="100" step="0.1" oninput="calculateInterest()"/>
+    </div>
+
+    <div class="form-group" id="interestFixedGroup" style="display:none;">
+      <label class="form-label">المبلغ الثابت</label>
+      <input type="number" class="form-input" id="interestFixed" 
+             value="0" min="0" step="0.01" oninput="calculateInterest()"/>
+    </div>
+
+    <div class="interest-preview" id="interestPreview"></div>
+
+    <div class="form-group">
+      <label class="form-label">ملاحظة</label>
+      <input type="text" class="form-input" id="interestNote" placeholder="سبب إضافة الفائدة"/>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-warning" onclick="applyInterest()">
+        <i class="fa-solid fa-plus"></i> إضافة
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('interestModal')">
+        إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar" id="sidebar">
+  <!-- محتوى sidebar قياسي -->
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="print.js"></script>
+<script src="app.js"></script>
+<script src="sync.js"></script>
+<script>
+// ============================================================
+//  HP-POS - customers.js  v8.1.0  (محسن بالكامل)
+// ============================================================
+
+// متغيرات عامة
+let allCustomers = [];
+let allDebts = [];
+let allSales = [];
+let allPayments = [];
+
+let currentPage = 1;
+const pageSize = 12;
+let currentFilter = 'all';
+let searchQuery = '';
+
+let activeCustomerId = null;
+let activeDebtId = null;
+
+// ============================================================
+//  التهيئة
+// ============================================================
+async function init() {
+  // التحقق من الجلسة
+  if (!window.sessionManager.requireAuth()) return;
+  
+  // تهيئة التطبيق
+  await window.initApp();
+  
+  // إخفاء الإشعارات في صفحات الإدارة
+  const _bell = document.getElementById('_notifBell');
+  if (_bell) _bell.remove();
+  
+  // تحميل البيانات
+  await loadAllData();
+  
+  // تحديث الواجهة
+  updateStats();
+  renderCustomers();
+
+  // ── تحديثات آنية: إعادة تحميل الزبائن والديون عند أي تغيير ──
+  const _rtCustReload = _debounce(async () => {
+    await loadAllData();
+    updateStats();
+    renderCustomers();
+  }, 400);
+  window.realtimeManager?.subscribe(
+    ['customers', 'debts', 'debtPayments', 'sales'],
+    _rtCustReload
+  );
+
+  console.log('✅ صفحة الزبائن جاهزة');
+}
+
+// ============================================================
+//  تحميل البيانات
+// ============================================================
+async function loadAllData() {
+  allCustomers = await window.dbManager.getAll('customers');
+  allDebts = await window.dbManager.getAll('debts');
+  allSales = await window.dbManager.getAll('sales');
+  allPayments = await window.dbManager.getAll('debtPayments');
+  
+  // ترتيب الزبائن أبجدياً
+  allCustomers.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// ============================================================
+//  تحديث الإحصائيات
+// ============================================================
+function updateStats() {
+  const totalCustomers = allCustomers.length;
+  
+  const totalDebts = allDebts
+    .filter(d => !d.isPaid)
+    .reduce((sum, d) => sum + (d.amount || 0), 0);
+  
+  const debtorsCount = new Set(
+    allDebts.filter(d => !d.isPaid).map(d => d.customerId)
+  ).size;
+  
+  const cleanCount = totalCustomers - debtorsCount;
+  
+  const statsGrid = document.getElementById('statsGrid');
+  statsGrid.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon total">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">إجمالي الزبائن</div>
+        <div class="stat-value">${totalCustomers}</div>
+        <div class="stat-sub">زبون مسجل</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon debt">
+        <i class="fa-solid fa-hand-holding-dollar"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">إجمالي الديون</div>
+        <div class="stat-value">${window.currencyFormatter.formatWithoutSymbol(totalDebts)}</div>
+        <div class="stat-sub">${debtorsCount} زبون مدين</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon clean">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">بدون ديون</div>
+        <div class="stat-value">${cleanCount}</div>
+        <div class="stat-sub">${((cleanCount / totalCustomers) * 100 || 0).toFixed(1)}%</div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+//  تصفية الزبائن
+// ============================================================
+function setFilter(filter) {
+  currentFilter = filter;
+  currentPage = 1;
+  
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  
+  renderCustomers();
+}
+
+function filterCustomers() {
+  searchQuery = document.getElementById('customerSearch').value.toLowerCase();
+  currentPage = 1;
+  renderCustomers();
+}
+
+function clearSearch() {
+  document.getElementById('customerSearch').value = '';
+  searchQuery = '';
+  renderCustomers();
+}
+
+// ============================================================
+//  عرض الزبائن مع Pagination
+// ============================================================
+function renderCustomers() {
+  // تطبيق الفلاتر
+  let filtered = allCustomers;
+  
+  if (searchQuery) {
+    filtered = filtered.filter(c => 
+      c.name.toLowerCase().includes(searchQuery) ||
+      (c.phone && c.phone.includes(searchQuery)) ||
+      (c.email && c.email.toLowerCase().includes(searchQuery))
+    );
+  }
+  
+  if (currentFilter === 'debt') {
+    const debtorsIds = new Set(allDebts.filter(d => !d.isPaid).map(d => d.customerId));
+    filtered = filtered.filter(c => debtorsIds.has(c.id));
+  } else if (currentFilter === 'clean') {
+    const debtorsIds = new Set(allDebts.filter(d => !d.isPaid).map(d => d.customerId));
+    filtered = filtered.filter(c => !debtorsIds.has(c.id));
+  }
+  
+  // Pagination
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const start = (currentPage - 1) * pageSize;
+  const pageCustomers = filtered.slice(start, start + pageSize);
+  
+  // عرض الزبائن
+  const container = document.getElementById('customersContainer');
+  
+  if (pageCustomers.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column:1/-1; text-align:center; padding:60px; background:var(--bg-card); border-radius:var(--radius);">
+        <i class="fa-solid fa-users-slash" style="font-size:3rem; opacity:0.3; margin-bottom:15px;"></i>
+        <p style="font-size:1rem; color:var(--text-secondary);">لا يوجد زبائن</p>
+        <button class="btn btn-primary" style="margin-top:15px;" onclick="openAddCustomerModal()">
+          <i class="fa-solid fa-plus"></i> إضافة زبون
+        </button>
+      </div>
+    `;
+    updatePagination(0, 0);
+    return;
+  }
+  
+  container.innerHTML = pageCustomers.map(customer => {
+    const customerDebts = allDebts.filter(d => d.customerId === customer.id && !d.isPaid);
+    const totalDebt = customerDebts.reduce((sum, d) => sum + (d.amount || 0), 0);
+    const hasDebt = totalDebt > 0;
+    
+    // ✅ استبعاد وصولات التسديد الكاملة فقط — البيع الجزئي هو شراء حقيقي
+    const customerSales = allSales.filter(s =>
+      s.customerId === customer.id &&
+      !s.isCancelled &&
+      s.invoiceKind !== 'settlement'
+    );
+    const totalPurchases = customerSales.reduce((sum, s) => sum + (s.total || 0), 0);
+    const visitCount = customerSales.length;
+    
+    const lastVisit = customerSales.length > 0 
+      ? new Date(customerSales.sort((a, b) => new Date(b.date) - new Date(a.date))[0].date)
+      : null;
+    
+    const oldestDebt = customerDebts.length > 0
+      ? new Date(customerDebts.sort((a, b) => new Date(a.date) - new Date(b.date))[0].date)
+      : null;
+    
+    const daysSinceDebt = oldestDebt ? Math.floor((Date.now() - oldestDebt) / 86400000) : 0;
+    
+    return `
+      <div class="customer-card ${hasDebt ? 'has-debt' : 'no-debt'}">
+        <div class="customer-header">
+          <div class="customer-info">
+            <div class="customer-name">
+              <i class="fa-solid fa-circle-user"></i>
+              <span>${window.sanitizer.escape(customer.name)}</span>
+            </div>
+            ${customer.phone ? `
+              <div class="customer-phone">
+                <i class="fa-solid fa-phone"></i>
+                <span>${window.sanitizer.escape(customer.phone)}</span>
+              </div>
+            ` : ''}
+            ${customer.email ? `
+              <div class="customer-email">
+                <i class="fa-solid fa-envelope"></i>
+                <span>${window.sanitizer.escape(customer.email)}</span>
+              </div>
+            ` : ''}
+          </div>
+          
+          <div class="debt-badge ${hasDebt ? 'has-debt' : 'no-debt'}">
+            <div class="debt-amount">${window.currencyFormatter.formatWithoutSymbol(totalDebt)}</div>
+            <div class="debt-label">${hasDebt ? 'دين' : 'مسدد'}</div>
+          </div>
+        </div>
+
+        <div class="customer-stats">
+          <div class="stat-item">
+            <div class="stat-item-value">${visitCount}</div>
+            <div class="stat-item-label">زيارة</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-item-value">${window.currencyFormatter.formatWithoutSymbol(totalPurchases)}</div>
+            <div class="stat-item-label">مشتريات</div>
+          </div>
+          ${lastVisit ? `
+            <div class="stat-item">
+              <div class="stat-item-value">${Math.floor((Date.now() - lastVisit) / 86400000)}</div>
+              <div class="stat-item-label">يوم</div>
+            </div>
+          ` : ''}
+        </div>
+
+        ${hasDebt ? `
+          <div class="debt-info">
+            <div class="debt-row">
+              <span>عدد الديون:</span>
+              <span style="font-weight:800;">${customerDebts.length}</span>
+            </div>
+            <div class="debt-row">
+              <span>أقدم دين:</span>
+              <span style="color:${daysSinceDebt > 30 ? 'var(--danger)' : daysSinceDebt > 14 ? 'var(--warning)' : 'var(--text-secondary)'};">
+                ${daysSinceDebt} يوم
+              </span>
+            </div>
+          </div>
+        ` : ''}
+
+        <div class="debt-actions">
+          <button class="action-btn primary" onclick="viewDebts(${customer.id})">
+            <i class="fa-solid fa-eye"></i>
+            <span>الديون</span>
+          </button>
+          
+          ${hasDebt ? `
+            <button class="action-btn success" onclick="openPaymentModal(${customer.id})">
+              <i class="fa-solid fa-money-bill"></i>
+              <span>تسديد</span>
+            </button>
+          ` : ''}
+          
+          <button class="action-btn secondary" onclick="editCustomer(${customer.id})">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          
+          <button class="action-btn danger" onclick="deleteCustomer(${customer.id})">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  updatePagination(currentPage, totalPages);
+}
+
+function updatePagination(current, total) {
+  const prevBtn = document.getElementById('prevPage');
+  const nextBtn = document.getElementById('nextPage');
+  const pageNumbers = document.getElementById('pageNumbers');
+  
+  prevBtn.disabled = current <= 1;
+  nextBtn.disabled = current >= total || total === 0;
+  
+  if (total === 0) {
+    pageNumbers.innerHTML = '';
+    return;
+  }
+  
+  // إنشاء أرقام الصفحات
+  let pages = '';
+  const maxVisible = 5;
+  let start = Math.max(1, current - Math.floor(maxVisible / 2));
+  let end = Math.min(total, start + maxVisible - 1);
+  
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  
+  for (let i = start; i <= end; i++) {
+    pages += `<button class="page-btn ${i === current ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  
+  pageNumbers.innerHTML = pages;
+}
+
+function goToPage(page) {
+  currentPage = page;
+  renderCustomers();
+}
+
+function changePage(delta) {
+  currentPage += delta;
+  renderCustomers();
+}
+
+// ============================================================
+//  إضافة/تعديل زبون
+// ============================================================
+function openAddCustomerModal() {
+  document.getElementById('editCustomerId').value = '';
+  document.getElementById('customerName').value = '';
+  document.getElementById('customerPhone').value = '';
+  document.getElementById('customerEmail').value = '';
+  document.getElementById('customerAddress').value = '';
+  document.getElementById('customerNotes').value = '';
+  document.getElementById('customerModalTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i> إضافة زبون جديد';
+  
+  window.modalManager.open('customerModal');
+  setTimeout(() => document.getElementById('customerName').focus(), 200);
+}
+
+async function editCustomer(id) {
+  const customer = allCustomers.find(c => c.id === id);
+  if (!customer) return;
+  
+  document.getElementById('editCustomerId').value = customer.id;
+  document.getElementById('customerName').value = customer.name || '';
+  document.getElementById('customerPhone').value = customer.phone || '';
+  document.getElementById('customerEmail').value = customer.email || '';
+  document.getElementById('customerAddress').value = customer.address || '';
+  document.getElementById('customerNotes').value = customer.notes || '';
+  document.getElementById('customerModalTitle').innerHTML = '<i class="fa-solid fa-user-pen"></i> تعديل بيانات الزبون';
+  
+  window.modalManager.open('customerModal');
+}
+
+async function saveCustomer() {
+  const id = document.getElementById('editCustomerId').value;
+  const name = document.getElementById('customerName').value.trim();
+  const phone = document.getElementById('customerPhone').value.trim();
+  const email = document.getElementById('customerEmail').value.trim();
+  const address = document.getElementById('customerAddress').value.trim();
+  const notes = document.getElementById('customerNotes').value.trim();
+  
+  if (!name) {
+    window.toast.show('الاسم مطلوب', 'warning');
+    document.getElementById('customerName').focus();
+    return;
+  }
+  
+  if (!phone) {
+    window.toast.show('رقم الهاتف مطلوب', 'warning');
+    document.getElementById('customerPhone').focus();
+    return;
+  }
+  
+  const customer = {
+    name,
+    phone,
+    email: email || null,
+    address: address || null,
+    notes: notes || null,
+    updatedAt: window.dateUtils.now()
+  };
+  
+  try {
+    if (id) {
+      customer.id = parseInt(id);
+      await window.dbManager.put('customers', customer);
+      window.toast.show('تم تعديل بيانات الزبون', 'success');
+    } else {
+      await window.dbManager.add('customers', customer);
+      window.toast.show('تمت إضافة الزبون', 'success');
+    }
+    
+    window.modalManager.close('customerModal');
+    await loadAllData();
+    updateStats();
+    renderCustomers();
+    
+  } catch (e) {
+    window.toast.show('فشل في حفظ البيانات', 'error');
+  }
+}
+
+async function deleteCustomer(id) {
+  const customer = allCustomers.find(c => c.id === id);
+  const hasDebt = allDebts.some(d => d.customerId === id && !d.isPaid);
+  
+  if (hasDebt) {
+    window.toast.show('لا يمكن حذف زبون لديه ديون غير مسددة', 'warning');
+    return;
+  }
+  
+  const confirmed = await window.modalManager.confirm(`هل أنت متأكد من حذف "${customer.name}"؟`);
+  if (!confirmed) return;
+  
+  await window.dbManager.delete('customers', id);
+  await loadAllData();
+  updateStats();
+  renderCustomers();
+  window.toast.show('تم حذف الزبون', 'success');
+}
+
+// ============================================================
+//  إدارة الديون
+// ============================================================
+async function viewDebts(customerId) {
+  activeCustomerId = customerId;
+  
+  const customer = allCustomers.find(c => c.id === customerId);
+  const debts = allDebts.filter(d => d.customerId === customerId && !d.isPaid);
+  const totalDebt = debts.reduce((sum, d) => sum + (d.amount || 0), 0);
+
+  // إظهار/إخفاء زر البريد حسب وجود email للزبون
+  const emailBtn = document.getElementById('sendDebtEmailBtn');
+  if (emailBtn) emailBtn.style.display = customer?.email ? 'inline-flex' : 'none';
+  
+  document.getElementById('debtModalTitle').innerHTML = `
+    <i class="fa-solid fa-hand-holding-dollar"></i> ديون ${window.sanitizer.escape(customer.name)}
+  `;
+  
+  if (debts.length === 0) {
+    document.getElementById('debtDetail').innerHTML = `
+      <div style="text-align:center; padding:40px;">
+        <i class="fa-solid fa-circle-check" style="font-size:3rem; color:var(--success); opacity:0.5;"></i>
+        <p style="margin-top:15px; color:var(--text-secondary);">لا توجد ديون لهذا الزبون</p>
+      </div>
+    `;
+  } else {
+    const sortedDebts = debts.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    document.getElementById('debtDetail').innerHTML = sortedDebts.map(debt => {
+      const sale = allSales.find(s => s.id === debt.saleId);
+      const days = window.dateUtils.daysBetween(debt.date);
+      const paidPercent = debt.originalAmount 
+        ? ((debt.originalAmount - debt.amount) / debt.originalAmount * 100).toFixed(1)
+        : 0;
+      
+      return `
+        <div class="debt-item">
+          <div class="debt-item-header">
+            <span class="debt-item-invoice">
+              <i class="fa-regular fa-file-lines"></i> ${sale ? sale.invoiceNumber : '—'}
+            </span>
+            <span class="debt-item-amount">${window.currencyFormatter.format(debt.amount)}</span>
+          </div>
+          
+          <div class="debt-item-days">
+            <i class="fa-regular fa-calendar"></i> ${window.dateUtils.formatDate(debt.date)}
+            <span style="color:${days > 30 ? 'var(--danger)' : days > 14 ? 'var(--warning)' : 'var(--text-secondary)'}; margin-right:10px;">
+              (منذ ${days} يوم)
+            </span>
+          </div>
+          
+          ${debt.originalAmount ? `
+            <div class="debt-progress">
+              <div class="debt-progress-fill" style="width:${paidPercent}%;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-top:5px;">
+              <span style="color:var(--text-secondary);">المسدد: ${window.currencyFormatter.formatWithoutSymbol(debt.originalAmount - debt.amount)}</span>
+              <span style="color:var(--success);">${paidPercent}%</span>
+            </div>
+          ` : ''}
+          
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button class="action-btn success" style="flex:1;" onclick="openPaymentModal(${customerId}, ${debt.id})">
+              <i class="fa-solid fa-money-bill"></i> تسديد
+            </button>
+            ${sale ? `
+              <button class="action-btn secondary" style="flex:1;" onclick="printDebtInvoice(${debt.id})">
+                <i class="fa-solid fa-print"></i> طباعة
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  window.modalManager.open('debtModal');
+}
+
+// ============================================================
+//  تسديد الديون
+// ============================================================
+function openPaymentModal(customerId, debtId = null) {
+  activeCustomerId = customerId;
+  activeDebtId = debtId;
+  
+  const customer = allCustomers.find(c => c.id === customerId);
+  const debts = allDebts.filter(d => d.customerId === customerId && !d.isPaid);
+  
+  let totalDebt = 0;
+  if (debtId) {
+    const debt = debts.find(d => d.id === debtId);
+    totalDebt = debt ? debt.amount : 0;
+  } else {
+    totalDebt = debts.reduce((sum, d) => sum + (d.amount || 0), 0);
+  }
+  
+  const paymentInfoEl = document.getElementById('paymentInfo');
+  paymentInfoEl.dataset.totalDebt = totalDebt;
+  paymentInfoEl.innerHTML = `
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+      <span>الزبون:</span>
+      <span style="font-weight:800; color:var(--primary-light);">${window.sanitizer.escape(customer.name)}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between;">
+      <span>إجمالي الدين:</span>
+      <span style="font-weight:900; color:var(--danger);">${window.currencyFormatter.format(totalDebt)}</span>
+    </div>
+  `;
+  
+  document.getElementById('paymentAmount').value = totalDebt.toFixed(2);
+  document.getElementById('paymentNote').value = '';
+  updatePaymentRemaining();
+  
+  window.modalManager.open('paymentModal');
+  setTimeout(() => document.getElementById('paymentAmount').focus(), 200);
+}
+
+function updatePaymentRemaining() {
+  const amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+  const totalDebt = parseFloat(document.getElementById('paymentInfo').dataset.totalDebt) || 0;
+  const remaining = Math.max(0, totalDebt - amount);
+  
+  const remainingEl = document.getElementById('paymentRemaining');
+  if (amount >= totalDebt) {
+    remainingEl.innerHTML = '✅ سيتم تسديد الدين بالكامل';
+    remainingEl.style.color = 'var(--success)';
+  } else {
+    remainingEl.innerHTML = `المتبقي بعد الدفع: ${window.currencyFormatter.format(remaining)}`;
+    remainingEl.style.color = 'var(--warning)';
+  }
+}
+
+async function confirmPayment() {
+  const amount = parseFloat(document.getElementById('paymentAmount').value);
+  const note = document.getElementById('paymentNote').value.trim();
+  const now = window.dateUtils.now();
+
+  if (!amount || amount <= 0) {
+    window.toast.show('أدخل مبلغاً صحيحاً', 'warning');
+    return;
+  }
+
+  let remainingAmount = amount;
+  // تجميع ديون مرتبطة بهذه الدفعة لربطها بالفاتورة
+  const linkedDebtIds = [];
+
+  if (activeDebtId) {
+    const debt = await window.dbManager.get('debts', activeDebtId);
+    if (!debt) return;
+
+    if (amount >= debt.amount) {
+      const origAmt = debt.originalAmount || debt.amount;
+      linkedDebtIds.push(debt.id);
+      await window.dbManager.add('debtPayments', {
+        debtId: debt.id, customerId: activeCustomerId,
+        amount: origAmt, before: origAmt, after: 0,
+        note: note || 'تسديد كامل', date: now
+      });
+      debt.isPaid = true; debt.paidDate = now; debt.amount = 0;
+      await window.dbManager.put('debts', debt);
+    } else {
+      const before = debt.amount;
+      linkedDebtIds.push(debt.id);
+      await window.dbManager.add('debtPayments', {
+        debtId: debt.id, customerId: activeCustomerId,
+        amount, before, after: before - amount,
+        note: note || 'تسديد جزئي', date: now
+      });
+      debt.amount = before - amount;
+      await window.dbManager.put('debts', debt);
+    }
+  } else {
+    const debts = allDebts
+      .filter(d => d.customerId === activeCustomerId && !d.isPaid)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    for (const debt of debts) {
+      if (remainingAmount <= 0) break;
+      linkedDebtIds.push(debt.id);
+      if (remainingAmount >= debt.amount) {
+        const before = debt.amount;
+        remainingAmount -= debt.amount;
+        await window.dbManager.add('debtPayments', {
+          debtId: debt.id, customerId: activeCustomerId,
+          amount: before, before, after: 0,
+          note: note || 'تسديد كامل', date: now
+        });
+        debt.isPaid = true; debt.paidDate = now; debt.amount = 0;
+        await window.dbManager.put('debts', debt);
+      } else {
+        const before = debt.amount;
+        await window.dbManager.add('debtPayments', {
+          debtId: debt.id, customerId: activeCustomerId,
+          amount: remainingAmount, before, after: before - remainingAmount,
+          note: note || 'تسديد جزئي', date: now
+        });
+        debt.amount = before - remainingAmount;
+        await window.dbManager.put('debts', debt);
+        remainingAmount = 0;
+      }
+    }
+  }
+
+  const customer = allCustomers.find(c => c.id === activeCustomerId);
+  const user = window.sessionManager?.getUser();
+
+  // ✅ تسجيل التسديد في transactions فقط — بدون إنشاء sale مزيف
+  const totalDebtBefore = parseFloat(document.getElementById('paymentInfo').dataset.totalDebt) || amount;
+  const isFullSettlement = amount >= totalDebtBefore;
+
+  await window.dbManager.add('transactions', {
+    type: 'debt_payment',
+    amount,
+    date: now,
+    ref_id: activeCustomerId,
+    customerId: activeCustomerId,
+    note: note || (isFullSettlement ? 'تسديد دين كامل' : 'تسديد دين جزئي'),
+    isFullSettlement,
+    linkedDebtIds: JSON.stringify(linkedDebtIds),
+    userId: user?.id || 0
+  });
+
+  await loadAllData();
+  window.modalManager.close('paymentModal');
+  if (activeDebtId) window.modalManager.close('debtModal');
+  updateStats();
+  renderCustomers();
+  window.toast.show(`✅ تم تسديد ${window.currencyFormatter.format(amount)}`, 'success');
+
+  // طباعة وصل التسديد
+  const shouldPrint = await window.modalManager.confirm('هل تريد طباعة وصل التسديد؟');
+  if (shouldPrint) {
+    if (typeof window.printInvoice === 'function') {
+      const fakeInvoiceNumber = '#TSD-' + Date.now().toString().slice(-4);
+      await window.printInvoice({
+        invoiceNumber: fakeInvoiceNumber,
+        invoiceKind: isFullSettlement ? 'settlement' : 'partial',
+        total: amount,
+        paid: amount,
+        change: 0,
+        isDebt: 0,
+        date: now,
+        sellerName: user?.username || '',
+        customerName: customer?.name || '',
+        customerPhone: customer?.phone || ''
+      }, [{
+        productName: note || (isFullSettlement ? 'تسديد دين كامل' : 'تسديد دين جزئي'),
+        quantity: 1,
+        unitPrice: amount,
+        total: amount
+      }]);
+    }
+  }
+}
+
+// ============================================================
+//  سجل الدفعات
+// ============================================================
+async function showPaymentHistory() {
+  const payments = allPayments
+    .filter(p => p.customerId === activeCustomerId)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  const customer = allCustomers.find(c => c.id === activeCustomerId);
+  
+  document.getElementById('historyModalTitle').innerHTML = `
+    <i class="fa-solid fa-clock-rotate-left"></i> سجل دفعات ${window.sanitizer.escape(customer.name)}
+  `;
+  
+  const tbody = document.getElementById('paymentsList');
+  
+  if (payments.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">لا توجد دفعات مسجلة</td></tr>';
+  } else {
+    tbody.innerHTML = payments.map(p => {
+      const type = p.after === 0 ? 'كامل' : 'جزئي';
+      const typeClass = p.after === 0 ? 'payment-full' : 'payment-partial';
+      
+      return `
+        <tr>
+          <td>${window.dateUtils.formatDateTime(p.date)}</td>
+          <td>${p.debtId ? '#' + p.debtId : '—'}</td>
+          <td style="font-weight:800; color:var(--success);">${window.currencyFormatter.formatWithoutSymbol(p.amount)}</td>
+          <td>${p.after !== undefined ? window.currencyFormatter.formatWithoutSymbol(p.after) : '—'}</td>
+          <td><span class="payment-badge ${typeClass}">${type}</span></td>
+          <td>${p.note || '—'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+  
+  window.modalManager.close('debtModal');
+  window.modalManager.open('historyModal');
+}
+
+// ============================================================
+//  إضافة فائدة
+// ============================================================
+function openInterestModal() {
+  const customer = allCustomers.find(c => c.id === activeCustomerId);
+  const debts = allDebts.filter(d => d.customerId === activeCustomerId && !d.isPaid);
+  const totalDebt = debts.reduce((sum, d) => sum + (d.amount || 0), 0);
+  
+  document.getElementById('interestInfo').innerHTML = `
+    <div style="display:flex; justify-content:space-between;">
+      <span>الزبون:</span>
+      <span style="font-weight:800;">${window.sanitizer.escape(customer.name)}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:5px;">
+      <span>إجمالي الديون:</span>
+      <span style="color:var(--danger); font-weight:900;">${window.currencyFormatter.format(totalDebt)}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:5px;">
+      <span>عدد الديون:</span>
+      <span>${debts.length}</span>
+    </div>
+  `;
+  
+  document.getElementById('interestRate').value = '2';
+  document.getElementById('interestFixed').value = '0';
+  document.getElementById('interestNote').value = '';
+  document.getElementById('interestType').value = 'daily';
+  document.getElementById('interestRateGroup').style.display = 'block';
+  document.getElementById('interestFixedGroup').style.display = 'none';
+  
+  calculateInterest();
+  window.modalManager.open('interestModal');
+}
+
+function calculateInterest() {
+  const type = document.getElementById('interestType').value;
+  const rate = parseFloat(document.getElementById('interestRate').value) / 100 || 0;
+  const fixed = parseFloat(document.getElementById('interestFixed').value) || 0;
+  
+  const debts = allDebts.filter(d => d.customerId === activeCustomerId && !d.isPaid);
+  const preview = document.getElementById('interestPreview');
+  
+  if (type === 'fixed') {
+    document.getElementById('interestRateGroup').style.display = 'none';
+    document.getElementById('interestFixedGroup').style.display = 'block';
+    
+    preview.innerHTML = `
+      <div style="display:flex; justify-content:space-between;">
+        <span>الفائدة المضافة:</span>
+        <span style="font-weight:900; color:#f59e0b;">${window.currencyFormatter.format(fixed)}</span>
+      </div>
+    `;
+    
+  } else {
+    document.getElementById('interestRateGroup').style.display = 'block';
+    document.getElementById('interestFixedGroup').style.display = 'none';
+    
+    let totalInterest = 0;
+    const details = debts.map(debt => {
+      const days = window.dateUtils.daysBetween(debt.date);
+      const months = Math.max(1, Math.round(days / 30));
+      
+      let interest = 0;
+      if (type === 'daily') {
+        interest = debt.amount * rate * days / 365;
+      } else {
+        interest = debt.amount * rate * months;
+      }
+      
+      totalInterest += interest;
+      
+      return `
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px;">
+          <span>${debt.amount.toFixed(2)} (${days} يوم)</span>
+          <span style="color:#f59e0b;">+${interest.toFixed(2)}</span>
+        </div>
+      `;
+    }).join('');
+    
+    preview.innerHTML = `
+      <div style="margin-bottom:8px;">${details}</div>
+      <div style="border-top:1px solid rgba(245,158,11,0.3); padding-top:8px; display:flex; justify-content:space-between;">
+        <span style="font-weight:800;">إجمالي الفائدة:</span>
+        <span style="font-weight:900; color:#f59e0b; font-size:1.1rem;">${window.currencyFormatter.format(totalInterest)}</span>
+      </div>
+    `;
+  }
+}
+
+async function applyInterest() {
+  const type = document.getElementById('interestType').value;
+  const rate = parseFloat(document.getElementById('interestRate').value) || 0;
+  const fixed = parseFloat(document.getElementById('interestFixed').value) || 0;
+  const note = document.getElementById('interestNote').value.trim() || 'فائدة على الدين';
+  
+  const debts = allDebts.filter(d => d.customerId === activeCustomerId && !d.isPaid);
+  
+  if (debts.length === 0) {
+    window.toast.show('لا توجد ديون لهذا الزبون', 'warning');
+    return;
+  }
+  
+  // حساب إجمالي الفائدة
+  let totalInterest = 0;
+  
+  if (type === 'fixed') {
+    totalInterest = fixed;
+  } else {
+    const rateDecimal = rate / 100;
+    debts.forEach(debt => {
+      const days = window.dateUtils.daysBetween(debt.date);
+      const months = Math.max(1, Math.round(days / 30));
+      
+      if (type === 'daily') {
+        totalInterest += debt.amount * rateDecimal * days / 365;
+      } else {
+        totalInterest += debt.amount * rateDecimal * months;
+      }
+    });
+  }
+  
+  if (totalInterest <= 0) {
+    window.toast.show('الفائدة تساوي صفر', 'warning');
+    return;
+  }
+  
+  const confirmed = await window.modalManager.confirm(
+    `إضافة فائدة بقيمة ${window.currencyFormatter.format(totalInterest)}؟`
+  );
+  
+  if (!confirmed) return;
+  
+  // إنشاء فاتورة جديدة للفائدة
+  const invoiceNumber = await window.getNextInvoiceNumber();
+  const user = window.sessionManager.getUser();
+  const now = window.dateUtils.now();
+  
+  const saleId = await window.dbManager.add('sales', {
+    invoiceNumber,
+    userId: user.id,
+    customerId: activeCustomerId,
+    total: totalInterest,
+    discount: 0,
+    paid: 0,
+    isDebt: 1,
+    isCancelled: 0,
+    date: now,
+    note: `فائدة - ${note}`
+  });
+  
+  await window.dbManager.add('saleItems', {
+    saleId,
+    productId: 0,
+    productName: `فائدة (${type === 'fixed' ? 'مبلغ ثابت' : rate + '%'})`,
+    quantity: 1,
+    unitPrice: totalInterest,
+    total: totalInterest,
+    isInterest: true
+  });
+  
+  await window.dbManager.add('debts', {
+    customerId: activeCustomerId,
+    saleId,
+    amount: totalInterest,
+    originalAmount: totalInterest,
+    isPaid: 0,
+    date: now,
+    isInterest: true,
+    interestType: type,
+    interestRate: rate,
+    note
+  });
+  
+  await loadAllData();
+  window.modalManager.close('interestModal');
+  viewDebts(activeCustomerId);
+  window.toast.show(`✅ تم إضافة فائدة ${window.currencyFormatter.format(totalInterest)}`, 'success');
+}
+
+// ============================================================
+//  طباعة وصل الدين
+// ============================================================
+async function printDebtInvoice(debtId) {
+  const debt = allDebts.find(d => d.id === debtId);
+  if (!debt) return;
+  
+  const customer = allCustomers.find(c => c.id === debt.customerId);
+  const sale = allSales.find(s => s.id === debt.saleId);
+  const items = allItems.filter(i => i.saleId === debt.saleId);
+  
+  if (typeof window.printInvoice === 'function') {
+    window.printInvoice({
+      invoiceNumber: sale ? sale.invoiceNumber : '—',
+      total: debt.originalAmount || debt.amount,
+      paid: (debt.originalAmount || debt.amount) - debt.amount,
+      remainingDebt: debt.amount,
+      isDebt: 1,
+      date: debt.date,
+      customerName: customer ? customer.name : '',
+      customerPhone: customer ? customer.phone : ''
+    }, items.length ? items : [{
+      productName: 'دين',
+      quantity: 1,
+      unitPrice: debt.amount,
+      total: debt.amount
+    }]);
+  }
+}
+
+async function printPaymentReceipt(customerId, amount, note) {
+  const customer = allCustomers.find(c => c.id === customerId);
+  const now = window.dateUtils.now();
+  
+  if (typeof window.printInvoice === 'function') {
+    window.printInvoice({
+      invoiceNumber: 'تسديد',
+      total: amount,
+      paid: amount,
+      isDebt: 0,
+      date: now,
+      customerName: customer ? customer.name : '',
+      customerPhone: customer ? customer.phone : '',
+      debtSettlement: true
+    }, [{
+      productName: note || 'تسديد دين',
+      quantity: 1,
+      unitPrice: amount,
+      total: amount
+    }]);
+  }
+}
+
+// ============================================================
+//  إرسال بريد الديون للزبون
+// ============================================================
+async function sendDebtEmail() {
+  const customer = allCustomers.find(c => c.id === activeCustomerId);
+  if (!customer?.email) {
+    window.toast.show('لا يوجد بريد إلكتروني لهذا الزبون', 'warning');
+    return;
+  }
+
+  const debts = allDebts.filter(d => d.customerId === activeCustomerId && !d.isPaid);
+  if (debts.length === 0) {
+    window.toast.show('لا توجد ديون لهذا الزبون', 'info');
+    return;
+  }
+
+  const totalDebt = debts.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const currency  = window.currencyFormatter.format(totalDebt);
+  const storeName = await window.getSetting('storeName') || 'HP-POS';
+  const today     = window.dateUtils.formatDate(window.dateUtils.today());
+
+  // بناء جدول الديون
+  const rows = debts.map(d => {
+    const sale = allSales.find(s => s.id === d.saleId);
+    const days = window.dateUtils.daysBetween(d.date);
+    return `
+      <tr>
+        <td style="padding:8px;border:1px solid #ddd;">${window.dateUtils.formatDate(d.date)}</td>
+        <td style="padding:8px;border:1px solid #ddd;">${sale?.invoiceNumber || '—'}</td>
+        <td style="padding:8px;border:1px solid #ddd;color:#dc2626;font-weight:700;">${window.currencyFormatter.format(d.amount)}</td>
+        <td style="padding:8px;border:1px solid #ddd;color:${days > 30 ? '#dc2626' : '#f59e0b'};">${days} يوم</td>
+      </tr>`;
+  }).join('');
+
+  const html = `
+    <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;">
+      <h2 style="color:#7C3AED;border-bottom:2px solid #7C3AED;padding-bottom:8px;">
+        💳 إشعار بالديون المستحقة — ${storeName}
+      </h2>
+      <p>السيد/ة <strong>${window.sanitizer.escape(customer.name)}</strong>،</p>
+      <p>نود إعلامكم بأن لديكم الديون التالية بتاريخ ${today}:</p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <thead>
+          <tr style="background:#f5f3ff;">
+            <th style="padding:8px;border:1px solid #ddd;text-align:right;">التاريخ</th>
+            <th style="padding:8px;border:1px solid #ddd;text-align:right;">الفاتورة</th>
+            <th style="padding:8px;border:1px solid #ddd;text-align:right;">المبلغ</th>
+            <th style="padding:8px;border:1px solid #ddd;text-align:right;">منذ</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px;margin-top:16px;">
+        <strong style="color:#dc2626;font-size:1.1em;">إجمالي الديون: ${currency}</strong>
+      </div>
+      <p style="margin-top:16px;color:#6b7280;font-size:12px;">
+        ${storeName} — HP-POS
+      </p>
+    </div>`;
+
+  // إرسال عبر server.js
+  const serverUrl = (await window.getSetting('serverUrl') || 'http://localhost:3000').replace(/\/$/, '');
+
+  window.toast.show('جاري إرسال البريد...', 'info');
+  try {
+    const res = await fetch(`${serverUrl}/api/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: customer.email,
+        subject: `💳 إشعار ديون — ${storeName}`,
+        html
+      }),
+      signal: AbortSignal.timeout(10000)
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      window.toast.show(`✅ تم إرسال البريد إلى ${customer.email}`, 'success');
+    } else {
+      window.toast.show('❌ ' + (data.error || 'فشل الإرسال'), 'error');
+    }
+  } catch (e) {
+    window.toast.show('❌ لا يمكن الاتصال بالخادم — تأكد من تشغيل server.js', 'error');
+  }
+}
+
+// ============================================================
+//  تحديث الكل
+// ============================================================
+async function refreshCustomers() {
+  await loadAllData();
+  updateStats();
+  renderCustomers();
+  window.toast.show('تم تحديث البيانات', 'success');
+}
+
+// ============================================================
+//  تسجيل الخروج
+// ============================================================
+function doLogout() {
+  window.modalManager.confirm('هل تريد تسجيل الخروج؟').then(confirmed => {
+    if (confirmed) {
+      window.sessionManager.logout();
+    }
+  });
+}
+
+// ============================================================
+//  بدء التشغيل
+// ============================================================
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

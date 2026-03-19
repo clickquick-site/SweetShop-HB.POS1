@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="shortcut icon" href="favicon.svg"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HP-POS - إدارة الموردين</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <style>
+    /* =========================================
+       تخطيط متطور لإدارة الموردين
+    ========================================= */
+    .suppliers-layout {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: var(--bg-dark);
+    }
+
+    /* بطاقات الإحصائيات */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      transition: all 0.2s ease;
+    }
+
+    .stat-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .stat-icon.suppliers {
+      background: rgba(124, 58, 237, 0.15);
+      color: #7c3aed;
+    }
+
+    .stat-icon.purchases {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .stat-icon.debt {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .stat-content {
+      flex: 1;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 900;
+      font-family: 'Impact', sans-serif;
+      color: var(--text-primary);
+    }
+
+    .stat-sub {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* التبويبات */
+    .tabs-modern {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+      overflow-x: auto;
+    }
+
+    .tab-modern {
+      padding: 8px 20px;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      border-bottom: none;
+    }
+
+    .tab-modern:hover {
+      color: var(--text-primary);
+      background: rgba(124, 58, 237, 0.05);
+    }
+
+    .tab-modern.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* شريط البحث */
+    .search-section {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrapper {
+      flex: 2;
+      min-width: 280px;
+      position: relative;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0 16px;
+      transition: all 0.2s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    .search-box i {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 14px 10px;
+    }
+
+    /* جدول الموردين */
+    .table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 18px;
+      background: var(--bg-dark);
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .table-title {
+      font-weight: 800;
+      color: var(--primary-light);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .suppliers-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .suppliers-table th {
+      background: var(--bg-dark);
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 14px 12px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .suppliers-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+
+    .suppliers-table tbody tr {
+      transition: background 0.15s;
+    }
+
+    .suppliers-table tbody tr:hover {
+      background: rgba(124, 58, 237, 0.05);
+    }
+
+    .debt-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .debt-positive {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .debt-zero {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+    }
+
+    .action-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .action-btn:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .action-btn.success:hover {
+      background: var(--success);
+    }
+
+    .action-btn.warning:hover {
+      background: var(--warning);
+    }
+
+    .action-btn.danger:hover {
+      background: var(--danger);
+    }
+
+    /* بطاقات فواتير الشراء */
+    .purchases-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .purchase-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      transition: all 0.2s ease;
+    }
+
+    .purchase-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .purchase-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .purchase-supplier {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--primary-light);
+      margin-bottom: 4px;
+    }
+
+    .purchase-date {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .purchase-status {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .status-paid {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .status-partial {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+
+    .status-debt {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .purchase-items {
+      margin: 12px 0;
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .purchase-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      padding: 4px 0;
+    }
+
+    .purchase-totals {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      font-size: 0.9rem;
+    }
+
+    .purchase-total {
+      font-weight: 800;
+      color: var(--primary-light);
+    }
+
+    .purchase-paid {
+      color: var(--success);
+    }
+
+    .purchase-debt {
+      color: var(--danger);
+    }
+
+    .purchase-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .purchase-btn {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    /* نموذج إضافة مورد */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full-width {
+      grid-column: span 2;
+    }
+
+    .form-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-label i {
+      color: var(--primary);
+      font-size: 0.8rem;
+    }
+
+    .form-input {
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      padding: 10px 14px;
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    /* نموذج إضافة فاتورة شراء */
+    .items-header {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0 4px;
+    }
+
+    .item-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .item-name {
+      flex: 3;
+    }
+
+    .item-qty {
+      flex: 1;
+      min-width: 80px;
+    }
+
+    .item-price {
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .item-total {
+      flex: 1;
+      min-width: 100px;
+      background: var(--bg-dark);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      text-align: center;
+      font-weight: 700;
+      color: var(--primary-light);
+    }
+
+    .item-remove {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--danger);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .item-remove:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    /* شريط التقدم */
+    .progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      transition: width 0.3s;
+    }
+
+    /* الترقيم الصفحات */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .page-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-btn:hover,
+    .page-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+<div class="bg-animated"></div>
+
+<div class="suppliers-layout">
+  <!-- الهيدر -->
+  <header class="app-header">
+    <button class="menu-btn" id="menuBtn">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <a href="sale.html" class="back-btn" title="واجهة البيع">
+      <i class="fa-solid fa-cash-register"></i>
+    </a>
+    
+    <span class="store-name" id="headerStoreName">جاري التحميل...</span>
+    
+    <div class="app-brand">
+      <span class="brand-title">HP-POS</span>
+      <span class="brand-clock" id="clockDisplay"></span>
+    </div>
+  </header>
+
+  <!-- المحتوى الرئيسي -->
+  <div style="flex:1; padding:20px; overflow-y:auto;">
+    
+    <!-- شريط الإجراءات العلوي -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h1 style="font-size:1.5rem; color:var(--primary-light); display:flex; align-items:center; gap:10px;">
+        <i class="fa-solid fa-truck"></i>
+        <span>إدارة الموردين</span>
+      </h1>
+      
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-success" onclick="openAddPurchaseModal()">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+          <span>فاتورة شراء</span>
+        </button>
+        <button class="btn btn-primary" onclick="openAddSupplierModal()">
+          <i class="fa-solid fa-plus"></i>
+          <span>مورد جديد</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- بطاقات الإحصائيات -->
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- التبويبات -->
+    <div class="tabs-modern">
+      <button class="tab-modern active" onclick="switchTab('suppliers')">
+        <i class="fa-solid fa-truck"></i>
+        <span>الموردون</span>
+      </button>
+      <button class="tab-modern" onclick="switchTab('purchases')">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+        <span>فواتير الشراء</span>
+        <span id="purchasesBadge" class="debt-badge debt-positive" style="display:none;"></span>
+      </button>
+    </div>
+
+    <!-- ========== تبويب: الموردون ========== -->
+    <div class="tab-content active" id="tab-suppliers">
+      <div class="search-section">
+        <div class="search-wrapper">
+          <div class="search-box">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" id="supplierSearch" 
+                   placeholder="ابحث باسم المورد، الهاتف أو النشاط..."
+                   oninput="filterSuppliers()"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">
+            <i class="fa-solid fa-truck"></i>
+            <span>قائمة الموردين</span>
+          </div>
+          <div class="table-actions">
+            <span id="suppliersCount" style="color:var(--text-secondary); font-size:0.85rem;"></span>
+          </div>
+        </div>
+        
+        <div style="overflow-x: auto;">
+          <table class="suppliers-table">
+            <thead>
+              <tr>
+                <th>المورد</th>
+                <th>الهاتف</th>
+                <th>العنوان</th>
+                <th>النشاط</th>
+                <th>إجمالي المشتريات</th>
+                <th>المدفوع</th>
+                <th>الدين</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="suppliersTbody">
+              <tr>
+                <td colspan="8" style="text-align:center; padding:50px;">
+                  <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; color:var(--primary);"></i>
+                  <p style="margin-top:10px;">جاري التحميل...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- أزرار التنقل بين الصفحات -->
+      <div class="pagination" id="suppliersPagination">
+        <button class="page-btn" id="prevSupplierPage" onclick="changeSuppliersPage(-1)" disabled>
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        <span id="supplierPageNumbers"></span>
+        <button class="page-btn" id="nextSupplierPage" onclick="changeSuppliersPage(1)" disabled>
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ========== تبويب: فواتير الشراء ========== -->
+    <div class="tab-content" id="tab-purchases">
+      <div class="search-section">
+        <div class="search-wrapper">
+          <div class="search-box">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" id="purchaseSearch" 
+                   placeholder="ابحث برقم الفاتورة أو اسم المورد..."
+                   oninput="filterPurchases()"/>
+          </div>
+        </div>
+        
+        <select class="form-input" style="width:150px;" id="purchaseFilter" onchange="filterPurchases()">
+          <option value="all">كل الفواتير</option>
+          <option value="paid">مسددة</option>
+          <option value="partial">مدفوعة جزئياً</option>
+          <option value="debt">غير مسددة</option>
+        </select>
+        
+        <select class="form-input" style="width:200px;" id="supplierFilter" onchange="filterPurchases()">
+          <option value="0">كل الموردين</option>
+        </select>
+      </div>
+
+      <div class="purchases-grid" id="purchasesGrid"></div>
+
+      <!-- أزرار التنقل بين الصفحات -->
+      <div class="pagination" id="purchasesPagination">
+        <button class="page-btn" id="prevPurchasePage" onclick="changePurchasesPage(-1)" disabled>
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        <span id="purchasePageNumbers"></span>
+        <button class="page-btn" id="nextPurchasePage" onclick="changePurchasesPage(1)" disabled>
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Modal: إضافة/تعديل مورد ========== -->
+<div class="modal-overlay" id="supplierModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="supplierModalTitle">
+        <i class="fa-solid fa-truck"></i> إضافة مورد جديد
+      </span>
+      <button class="modal-close" onclick="closeModal('supplierModal')">✕</button>
+    </div>
+    
+    <input type="hidden" id="editSupplierId"/>
+    
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-building"></i>
+          <span>اسم المورد *</span>
+        </label>
+        <input type="text" class="form-input" id="supplierName" 
+               placeholder="أدخل اسم المورد"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-phone"></i>
+          <span>رقم الهاتف *</span>
+        </label>
+        <input type="tel" class="form-input" id="supplierPhone" 
+               placeholder="05XX XX XX XX"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-envelope"></i>
+          <span>البريد الإلكتروني</span>
+        </label>
+        <input type="email" class="form-input" id="supplierEmail" 
+               placeholder="example@domain.com"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-location-dot"></i>
+          <span>العنوان</span>
+        </label>
+        <input type="text" class="form-input" id="supplierAddress" 
+               placeholder="العنوان"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-briefcase"></i>
+          <span>نوع النشاط</span>
+        </label>
+        <input type="text" class="form-input" id="supplierActivity" 
+               placeholder="مثال: مواد غذائية"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-hashtag"></i>
+          <span>الرقم الضريبي</span>
+        </label>
+        <input type="text" class="form-input" id="supplierTax" 
+               placeholder="رقم التسجيل الضريبي"/>
+      </div>
+
+      <div class="form-group full-width">
+        <label class="form-label">
+          <i class="fa-solid fa-note-sticky"></i>
+          <span>ملاحظات</span>
+        </label>
+        <textarea class="form-input" id="supplierNotes" rows="2" 
+                  placeholder="ملاحظات إضافية..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-success" onclick="saveSupplier()">
+        <i class="fa-solid fa-floppy-disk"></i> حفظ
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('supplierModal')">
+        إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Modal: إضافة/تعديل فاتورة شراء ========== -->
+<div class="modal-overlay" id="purchaseModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="purchaseModalTitle">
+        <i class="fa-solid fa-file-invoice-dollar"></i> فاتورة شراء جديدة
+      </span>
+      <button class="modal-close" onclick="closeModal('purchaseModal')">✕</button>
+    </div>
+    
+    <input type="hidden" id="editPurchaseId"/>
+    
+    <!-- معلومات الفاتورة -->
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-bottom:20px;">
+      <div class="form-group">
+        <label class="form-label">المورد *</label>
+        <select class="form-input" id="purchaseSupplier">
+          <option value="">-- اختر مورداً --</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">رقم الفاتورة</label>
+        <input type="text" class="form-input" id="purchaseNumber" 
+               placeholder="اختياري"/>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">التاريخ *</label>
+        <input type="date" class="form-input" id="purchaseDate"/>
+      </div>
+    </div>
+
+    <!-- حالة الدفع -->
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-bottom:20px;">
+      <div class="form-group">
+        <label class="form-label">حالة الدفع</label>
+        <select class="form-input" id="purchasePayStatus" onchange="togglePaymentFields()">
+          <option value="paid">✅ مدفوعة بالكامل</option>
+          <option value="partial">🟡 مدفوعة جزئياً</option>
+          <option value="debt">🔴 غير مدفوعة</option>
+        </select>
+      </div>
+      
+      <div class="form-group" id="paidAmountGroup">
+        <label class="form-label">المبلغ المدفوع</label>
+        <input type="number" class="form-input" id="purchasePaid" 
+               placeholder="0.00" min="0" step="0.01" oninput="calculateDebt()"/>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">ملاحظات</label>
+        <input type="text" class="form-input" id="purchaseNote" 
+               placeholder="اختياري"/>
+      </div>
+    </div>
+
+    <!-- المنتجات -->
+    <div style="margin:20px 0;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <span style="font-weight:700; color:var(--primary-light);">
+          <i class="fa-solid fa-box"></i> المنتجات المشتراة
+        </span>
+        <button class="btn btn-sm btn-primary" onclick="addItemRow()">
+          <i class="fa-solid fa-plus"></i> إضافة منتج
+        </button>
+      </div>
+
+      <div class="items-header">
+        <span class="item-name">اسم المنتج</span>
+        <span class="item-qty">الكمية</span>
+        <span class="item-price">سعر الشراء</span>
+        <span class="item-total">المجموع</span>
+        <span style="width:36px;"></span>
+      </div>
+
+      <div id="itemsContainer"></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding:15px; background:var(--bg-dark); border-radius:var(--radius-sm);">
+        <span style="font-weight:700;">إجمالي الفاتورة:</span>
+        <span style="font-size:1.2rem; font-weight:900; color:var(--primary-light);" id="purchaseTotal">0.00</span>
+      </div>
+
+      <div id="debtInfo" style="display:none; margin-top:10px; padding:10px; background:rgba(239,68,68,0.1); border-radius:var(--radius-sm); color:var(--danger); font-weight:700; text-align:center;"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-success" onclick="savePurchase()">
+        <i class="fa-solid fa-floppy-disk"></i> حفظ الفاتورة
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('purchaseModal')">
+        إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Modal: تسديد دين ========== -->
+<div class="modal-overlay" id="payDebtModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-title">
+        <i class="fa-solid fa-money-bill"></i> تسديد دين للمورد
+      </span>
+      <button class="modal-close" onclick="closeModal('payDebtModal')">✕</button>
+    </div>
+
+    <div id="payDebtInfo" style="background:var(--bg-dark); border-radius:8px; padding:12px; margin:15px 0;"></div>
+
+    <div class="form-group">
+      <label class="form-label">المبلغ المدفوع</label>
+      <input type="number" class="form-input" id="payDebtAmount" 
+             placeholder="0.00" min="0" step="0.01" style="font-size:1.2rem; text-align:center;"
+             oninput="updatePayDebtRemaining()"/>
+    </div>
+
+    <div id="payDebtRemaining" style="text-align:center; font-weight:700; margin:10px 0;"></div>
+
+    <div class="form-group">
+      <label class="form-label">ملاحظة</label>
+      <input type="text" class="form-input" id="payDebtNote" placeholder="اختياري"/>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-success" onclick="confirmPayDebt()">
+        <i class="fa-solid fa-check"></i> تأكيد
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('payDebtModal')">
+        إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar" id="sidebar">
+  <!-- محتوى sidebar قياسي -->
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="app.js"></script>
+<script src="sync.js"></script>
+<script>
+// ============================================================
+//  HP-POS - suppliers.js  v8.1.0  (محسن بالكامل)
+// ============================================================
+
+// متغيرات عامة
+let allSuppliers = [];
+let allPurchases = [];
+
+let currentSuppliersPage = 1;
+let currentPurchasesPage = 1;
+const pageSize = 10;
+
+let suppliersFiltered = [];
+let purchasesFiltered = [];
+
+// ============================================================
+//  التهيئة
+// ============================================================
+async function init() {
+  // التحقق من الصلاحية
+  if (!window.sessionManager.requireRole(['admin', 'manager'])) return;
+  
+  // تهيئة التطبيق
+  await window.initApp();
+  
+  // إخفاء الإشعارات في صفحات الإدارة
+  const _bell = document.getElementById('_notifBell');
+  if (_bell) _bell.remove();
+  
+  // تحميل البيانات
+  await loadAllData();
+  
+  // تحديث الواجهة
+  updateStats();
+  renderSuppliers();
+  renderPurchases();
+
+  // ── تحديثات آنية: إعادة تحميل الموردين والمشتريات عند أي تغيير
+  const _rtSupReload = _debounce(async () => {
+    await loadAllData();
+    updateStats();
+    renderSuppliers();
+    renderPurchases();
+  }, 400);
+  window.realtimeManager?.subscribe(
+    ['suppliers', 'purchases'],
+    _rtSupReload
+  );
+
+  console.log('✅ صفحة الموردين جاهزة');
+}
+
+// ============================================================
+//  تحميل البيانات
+// ============================================================
+async function loadAllData() {
+  allSuppliers = await window.dbManager.getAll('suppliers');
+  allPurchases = await window.dbManager.getAll('purchases');
+  
+  // ترتيب الموردين أبجدياً
+  allSuppliers.sort((a, b) => a.name.localeCompare(b.name));
+  
+  // ترتيب المشتريات تنازلياً حسب التاريخ
+  allPurchases.sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+// ============================================================
+//  تحديث الإحصائيات
+// ============================================================
+function updateStats() {
+  const totalSuppliers = allSuppliers.length;
+  
+  const totalPurchases = allPurchases.reduce((sum, p) => sum + (p.total || 0), 0);
+  const totalPaid = allPurchases.reduce((sum, p) => sum + (p.paid || 0), 0);
+  const totalDebt = totalPurchases - totalPaid;
+  
+  const suppliersWithDebt = new Set(
+    allPurchases
+      .filter(p => (p.total - (p.paid || 0)) > 0)
+      .map(p => p.supplierId)
+  ).size;
+  
+  const statsGrid = document.getElementById('statsGrid');
+  statsGrid.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon suppliers">
+        <i class="fa-solid fa-truck"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">إجمالي الموردين</div>
+        <div class="stat-value">${totalSuppliers}</div>
+        <div class="stat-sub">مورد</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon purchases">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">إجمالي المشتريات</div>
+        <div class="stat-value">${window.currencyFormatter.formatWithoutSymbol(totalPurchases)}</div>
+        <div class="stat-sub">${allPurchases.length} فاتورة</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon debt">
+        <i class="fa-solid fa-hand-holding-dollar"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">ديون الموردين</div>
+        <div class="stat-value">${window.currencyFormatter.formatWithoutSymbol(totalDebt)}</div>
+        <div class="stat-sub">${suppliersWithDebt} مورد</div>
+      </div>
+    </div>
+  `;
+  
+  // تحديث badge في التبويب
+  const badge = document.getElementById('purchasesBadge');
+  if (totalDebt > 0) {
+    badge.textContent = window.currencyFormatter.formatWithoutSymbol(totalDebt);
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ============================================================
+//  التبويبات
+// ============================================================
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-modern').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  
+  document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+  document.getElementById(`tab-${tabId}`).classList.add('active');
+}
+
+// ============================================================
+//  عرض الموردين
+// ============================================================
+function filterSuppliers() {
+  const query = document.getElementById('supplierSearch').value.toLowerCase();
+  
+  suppliersFiltered = allSuppliers.filter(s => 
+    s.name.toLowerCase().includes(query) ||
+    (s.phone && s.phone.includes(query)) ||
+    (s.activity && s.activity.toLowerCase().includes(query))
+  );
+  
+  currentSuppliersPage = 1;
+  renderSuppliers();
+}
+
+function renderSuppliers() {
+  const total = suppliersFiltered.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const start = (currentSuppliersPage - 1) * pageSize;
+  const pageSuppliers = suppliersFiltered.slice(start, start + pageSize);
+  
+  document.getElementById('suppliersCount').textContent = `إجمالي: ${total} مورد`;
+  
+  const tbody = document.getElementById('suppliersTbody');
+  
+  if (pageSuppliers.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align:center; padding:50px;">
+          <i class="fa-solid fa-truck" style="font-size:2rem; opacity:0.3;"></i>
+          <p style="margin-top:10px;">لا يوجد موردون</p>
+        </td>
+      </tr>
+    `;
+    updateSuppliersPagination(0, 0);
+    return;
+  }
+  
+  tbody.innerHTML = pageSuppliers.map(supplier => {
+    // حساب مشتريات المورد
+    const supplierPurchases = allPurchases.filter(p => p.supplierId === supplier.id);
+    const totalPurchased = supplierPurchases.reduce((sum, p) => sum + (p.total || 0), 0);
+    const totalPaid = supplierPurchases.reduce((sum, p) => sum + (p.paid || 0), 0);
+    const currentDebt = totalPurchased - totalPaid;
+    
+    const lastPurchase = supplierPurchases.length > 0
+      ? new Date(supplierPurchases.sort((a, b) => new Date(b.date) - new Date(a.date))[0].date)
+      : null;
+    
+    return `
+      <tr>
+        <td>
+          <div style="font-weight:800;">${window.sanitizer.escape(supplier.name)}</div>
+          ${supplier.activity ? `<div style="font-size:0.7rem; color:var(--text-secondary);">${window.sanitizer.escape(supplier.activity)}</div>` : ''}
+        </td>
+        <td>
+          ${supplier.phone ? `
+            <a href="tel:${supplier.phone}" style="color:var(--primary-light); text-decoration:none;">
+              <i class="fa-solid fa-phone"></i> ${supplier.phone}
+            </a>
+          ` : '—'}
+        </td>
+        <td>${supplier.address || '—'}</td>
+        <td>${supplier.activity || '—'}</td>
+        <td style="font-weight:700;">${window.currencyFormatter.formatWithoutSymbol(totalPurchased)}</td>
+        <td style="color:var(--success);">${window.currencyFormatter.formatWithoutSymbol(totalPaid)}</td>
+        <td>
+          <span class="debt-badge ${currentDebt > 0 ? 'debt-positive' : 'debt-zero'}">
+            ${window.currencyFormatter.formatWithoutSymbol(currentDebt)}
+          </span>
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button class="action-btn success" onclick="openAddPurchaseModal(${supplier.id})" title="فاتورة شراء">
+              <i class="fa-solid fa-file-invoice-dollar"></i>
+            </button>
+            <button class="action-btn" onclick="editSupplier(${supplier.id})" title="تعديل">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="action-btn danger" onclick="deleteSupplier(${supplier.id})" title="حذف">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  updateSuppliersPagination(currentSuppliersPage, totalPages);
+}
+
+function updateSuppliersPagination(current, total) {
+  const prevBtn = document.getElementById('prevSupplierPage');
+  const nextBtn = document.getElementById('nextSupplierPage');
+  const pageNumbers = document.getElementById('supplierPageNumbers');
+  
+  prevBtn.disabled = current <= 1;
+  nextBtn.disabled = current >= total || total === 0;
+  
+  if (total === 0) {
+    pageNumbers.innerHTML = '';
+    return;
+  }
+  
+  let pages = '';
+  const maxVisible = 5;
+  let start = Math.max(1, current - Math.floor(maxVisible / 2));
+  let end = Math.min(total, start + maxVisible - 1);
+  
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  
+  for (let i = start; i <= end; i++) {
+    pages += `<button class="page-btn ${i === current ? 'active' : ''}" onclick="goToSuppliersPage(${i})">${i}</button>`;
+  }
+  
+  pageNumbers.innerHTML = pages;
+}
+
+function goToSuppliersPage(page) {
+  currentSuppliersPage = page;
+  renderSuppliers();
+}
+
+function changeSuppliersPage(delta) {
+  currentSuppliersPage += delta;
+  renderSuppliers();
+}
+
+// ============================================================
+//  إضافة/تعديل مورد
+// ============================================================
+function openAddSupplierModal() {
+  document.getElementById('editSupplierId').value = '';
+  document.getElementById('supplierName').value = '';
+  document.getElementById('supplierPhone').value = '';
+  document.getElementById('supplierEmail').value = '';
+  document.getElementById('supplierAddress').value = '';
+  document.getElementById('supplierActivity').value = '';
+  document.getElementById('supplierTax').value = '';
+  document.getElementById('supplierNotes').value = '';
+  document.getElementById('supplierModalTitle').innerHTML = '<i class="fa-solid fa-truck"></i> إضافة مورد جديد';
+  
+  window.modalManager.open('supplierModal');
+  setTimeout(() => document.getElementById('supplierName').focus(), 200);
+}
+
+async function editSupplier(id) {
+  const supplier = allSuppliers.find(s => s.id === id);
+  if (!supplier) return;
+  
+  document.getElementById('editSupplierId').value = supplier.id;
+  document.getElementById('supplierName').value = supplier.name || '';
+  document.getElementById('supplierPhone').value = supplier.phone || '';
+  document.getElementById('supplierEmail').value = supplier.email || '';
+  document.getElementById('supplierAddress').value = supplier.address || '';
+  document.getElementById('supplierActivity').value = supplier.activity || '';
+  document.getElementById('supplierTax').value = supplier.taxNumber || '';
+  document.getElementById('supplierNotes').value = supplier.notes || '';
+  document.getElementById('supplierModalTitle').innerHTML = '<i class="fa-solid fa-truck"></i> تعديل بيانات المورد';
+  
+  window.modalManager.open('supplierModal');
+}
+
+async function saveSupplier() {
+  const id = document.getElementById('editSupplierId').value;
+  const name = document.getElementById('supplierName').value.trim();
+  const phone = document.getElementById('supplierPhone').value.trim();
+  const email = document.getElementById('supplierEmail').value.trim();
+  const address = document.getElementById('supplierAddress').value.trim();
+  const activity = document.getElementById('supplierActivity').value.trim();
+  const taxNumber = document.getElementById('supplierTax').value.trim();
+  const notes = document.getElementById('supplierNotes').value.trim();
+  
+  if (!name) {
+    window.toast.show('اسم المورد مطلوب', 'warning');
+    document.getElementById('supplierName').focus();
+    return;
+  }
+  
+  if (!phone) {
+    window.toast.show('رقم الهاتف مطلوب', 'warning');
+    document.getElementById('supplierPhone').focus();
+    return;
+  }
+  
+  const supplier = {
+    name,
+    phone,
+    email: email || null,
+    address: address || null,
+    activity: activity || null,
+    taxNumber: taxNumber || null,
+    notes: notes || null,
+    updatedAt: window.dateUtils.now()
+  };
+  
+  try {
+    if (id) {
+      supplier.id = parseInt(id);
+      await window.dbManager.put('suppliers', supplier);
+      window.toast.show('تم تعديل بيانات المورد', 'success');
+    } else {
+      await window.dbManager.add('suppliers', supplier);
+      window.toast.show('تمت إضافة المورد', 'success');
+    }
+    
+    window.modalManager.close('supplierModal');
+    await loadAllData();
+    updateStats();
+    filterSuppliers();
+    
+  } catch (e) {
+    window.toast.show('فشل في حفظ البيانات', 'error');
+  }
+}
+
+async function deleteSupplier(id) {
+  const supplier = allSuppliers.find(s => s.id === id);
+  const hasPurchases = allPurchases.some(p => p.supplierId === id);
+  const hasDebt = allPurchases.some(p => p.supplierId === id && (p.total - (p.paid || 0)) > 0);
+  
+  if (hasDebt) {
+    window.toast.show('لا يمكن حذف مورد لديه ديون مستحقة', 'warning');
+    return;
+  }
+  
+  let message = `هل أنت متأكد من حذف "${supplier.name}"؟`;
+  if (hasPurchases) {
+    message = `⚠️ هذا المورد لديه ${allPurchases.filter(p => p.supplierId === id).length} فاتورة شراء سابقة. الحذف سيؤثر على التقارير. هل تريد المتابعة؟`;
+  }
+  
+  const confirmed = await window.modalManager.confirm(message);
+  if (!confirmed) return;
+  
+  await window.dbManager.delete('suppliers', id);
+  await loadAllData();
+  updateStats();
+  filterSuppliers();
+  window.toast.show('تم حذف المورد', 'success');
+}
+
+// ============================================================
+//  عرض فواتير الشراء
+// ============================================================
+function filterPurchases() {
+  const query = document.getElementById('purchaseSearch').value.toLowerCase();
+  const filter = document.getElementById('purchaseFilter').value;
+  const supplierId = parseInt(document.getElementById('supplierFilter').value) || 0;
+  
+  purchasesFiltered = allPurchases.filter(p => {
+    const supplier = allSuppliers.find(s => s.id === p.supplierId);
+    const matchesSearch = !query || 
+      (p.invoiceNumber && p.invoiceNumber.toLowerCase().includes(query)) ||
+      (supplier && supplier.name.toLowerCase().includes(query));
+    
+    const matchesFilter = filter === 'all' ||
+      (filter === 'paid' && p.payStatus === 'paid') ||
+      (filter === 'partial' && p.payStatus === 'partial') ||
+      (filter === 'debt' && p.payStatus === 'debt');
+    
+    const matchesSupplier = supplierId === 0 || p.supplierId === supplierId;
+    
+    return matchesSearch && matchesFilter && matchesSupplier;
+  });
+  
+  currentPurchasesPage = 1;
+  renderPurchases();
+}
+
+function renderPurchases() {
+  const total = purchasesFiltered.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const start = (currentPurchasesPage - 1) * pageSize;
+  const pagePurchases = purchasesFiltered.slice(start, start + pageSize);
+  
+  const grid = document.getElementById('purchasesGrid');
+  
+  if (pagePurchases.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1; text-align:center; padding:60px; background:var(--bg-card); border-radius:var(--radius);">
+        <i class="fa-solid fa-file-invoice" style="font-size:3rem; opacity:0.3; margin-bottom:15px;"></i>
+        <p style="font-size:1rem; color:var(--text-secondary);">لا توجد فواتير شراء</p>
+        <button class="btn btn-primary" style="margin-top:15px;" onclick="openAddPurchaseModal()">
+          <i class="fa-solid fa-plus"></i> إضافة فاتورة
+        </button>
+      </div>
+    `;
+    updatePurchasesPagination(0, 0);
+    return;
+  }
+  
+  grid.innerHTML = pagePurchases.map(purchase => {
+    const supplier = allSuppliers.find(s => s.id === purchase.supplierId);
+    const debt = purchase.total - (purchase.paid || 0);
+    
+    let statusClass = 'status-paid';
+    let statusText = 'مدفوعة';
+    
+    if (purchase.payStatus === 'debt' || debt === purchase.total) {
+      statusClass = 'status-debt';
+      statusText = 'غير مدفوعة';
+    } else if (purchase.payStatus === 'partial' || (debt > 0 && debt < purchase.total)) {
+      statusClass = 'status-partial';
+      statusText = 'مدفوعة جزئياً';
+    }
+    
+    const items = purchase.items || [];
+    
+    return `
+      <div class="purchase-card">
+        <div class="purchase-header">
+          <div>
+            <div class="purchase-supplier">
+              <i class="fa-solid fa-building"></i> ${supplier ? window.sanitizer.escape(supplier.name) : '—'}
+            </div>
+            <div class="purchase-date">
+              <i class="fa-regular fa-calendar"></i> ${window.dateUtils.formatDate(purchase.date)}
+              ${purchase.invoiceNumber ? ` · <span style="color:var(--primary-light);">${purchase.invoiceNumber}</span>` : ''}
+            </div>
+          </div>
+          <div>
+            <span class="purchase-status ${statusClass}">${statusText}</span>
+          </div>
+        </div>
+
+        <div class="purchase-items">
+          ${items.slice(0, 3).map(item => `
+            <div class="purchase-item">
+              <span>${window.sanitizer.escape(item.name)}</span>
+              <span>${item.quantity} × ${window.currencyFormatter.formatWithoutSymbol(item.unitPrice)}</span>
+            </div>
+          `).join('')}
+          ${items.length > 3 ? `<div style="text-align:center; font-size:0.75rem; color:var(--text-secondary); margin-top:5px;">+${items.length - 3} منتج آخر</div>` : ''}
+        </div>
+
+        <div class="purchase-totals">
+          <span>الإجمالي:</span>
+          <span class="purchase-total">${window.currencyFormatter.format(purchase.total)}</span>
+        </div>
+        
+        <div class="purchase-totals">
+          <span>المدفوع:</span>
+          <span class="purchase-paid">${window.currencyFormatter.format(purchase.paid || 0)}</span>
+        </div>
+        
+        ${debt > 0 ? `
+          <div class="purchase-totals">
+            <span>المتبقي:</span>
+            <span class="purchase-debt">${window.currencyFormatter.format(debt)}</span>
+          </div>
+        ` : ''}
+
+        <div class="purchase-actions">
+          ${debt > 0 ? `
+            <button class="purchase-btn" style="background:var(--success); color:#fff;" onclick="openPayDebtModal(${purchase.id})">
+              <i class="fa-solid fa-money-bill"></i> تسديد
+            </button>
+          ` : ''}
+          <button class="purchase-btn" style="background:var(--primary); color:#fff;" onclick="editPurchase(${purchase.id})">
+            <i class="fa-solid fa-pen"></i> تعديل
+          </button>
+          <button class="purchase-btn" style="background:var(--danger); color:#fff;" onclick="deletePurchase(${purchase.id})">
+            <i class="fa-solid fa-trash"></i> حذف
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  updatePurchasesPagination(currentPurchasesPage, totalPages);
+}
+
+function updatePurchasesPagination(current, total) {
+  const prevBtn = document.getElementById('prevPurchasePage');
+  const nextBtn = document.getElementById('nextPurchasePage');
+  const pageNumbers = document.getElementById('purchasePageNumbers');
+  
+  prevBtn.disabled = current <= 1;
+  nextBtn.disabled = current >= total || total === 0;
+  
+  if (total === 0) {
+    pageNumbers.innerHTML = '';
+    return;
+  }
+  
+  let pages = '';
+  const maxVisible = 5;
+  let start = Math.max(1, current - Math.floor(maxVisible / 2));
+  let end = Math.min(total, start + maxVisible - 1);
+  
+  for (let i = start; i <= end; i++) {
+    pages += `<button class="page-btn ${i === current ? 'active' : ''}" onclick="goToPurchasesPage(${i})">${i}</button>`;
+  }
+  
+  pageNumbers.innerHTML = pages;
+}
+
+function goToPurchasesPage(page) {
+  currentPurchasesPage = page;
+  renderPurchases();
+}
+
+function changePurchasesPage(delta) {
+  currentPurchasesPage += delta;
+  renderPurchases();
+}
+
+// ============================================================
+//  إضافة/تعديل فاتورة شراء
+// ============================================================
+function openAddPurchaseModal(supplierId = null) {
+  document.getElementById('editPurchaseId').value = '';
+  document.getElementById('purchaseNumber').value = '';
+  document.getElementById('purchaseDate').value = window.dateUtils.today();
+  document.getElementById('purchasePayStatus').value = 'paid';
+  document.getElementById('purchasePaid').value = '';
+  document.getElementById('purchaseNote').value = '';
+  document.getElementById('purchaseTotal').textContent = '0.00';
+  document.getElementById('debtInfo').style.display = 'none';
+  document.getElementById('paidAmountGroup').style.display = 'block';
+  
+  // ملء قائمة الموردين
+  const supplierSelect = document.getElementById('purchaseSupplier');
+  supplierSelect.innerHTML = '<option value="">-- اختر مورداً --</option>';
+  allSuppliers.forEach(s => {
+    supplierSelect.innerHTML += `<option value="${s.id}">${window.sanitizer.escape(s.name)}</option>`;
+  });
+  
+  if (supplierId) {
+    supplierSelect.value = supplierId;
+  }
+  
+  // إضافة صف منتج فارغ
+  document.getElementById('itemsContainer').innerHTML = '';
+  addItemRow();
+  
+  document.getElementById('purchaseModalTitle').innerHTML = '<i class="fa-solid fa-file-invoice-dollar"></i> فاتورة شراء جديدة';
+  window.modalManager.open('purchaseModal');
+}
+
+function togglePaymentFields() {
+  const status = document.getElementById('purchasePayStatus').value;
+  const paidGroup = document.getElementById('paidAmountGroup');
+  
+  if (status === 'paid') {
+    paidGroup.style.display = 'block';
+    document.getElementById('purchasePaid').value = document.getElementById('purchaseTotal').textContent;
+  } else if (status === 'partial') {
+    paidGroup.style.display = 'block';
+  } else {
+    paidGroup.style.display = 'none';
+    document.getElementById('purchasePaid').value = '0';
+  }
+  
+  calculateDebt();
+}
+
+function addItemRow(data = {}) {
+  const container = document.getElementById('itemsContainer');
+  const rowId = 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+  
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  row.id = rowId;
+  row.innerHTML = `
+    <input type="text" class="form-input item-name" 
+           placeholder="اسم المنتج" value="${data.name || ''}"
+           oninput="calculateItemTotal('${rowId}')"/>
+    <input type="number" class="form-input item-qty" 
+           placeholder="الكمية" value="${data.quantity || 1}" min="0.001" step="0.001"
+           oninput="calculateItemTotal('${rowId}')"/>
+    <input type="number" class="form-input item-price" 
+           placeholder="السعر" value="${data.unitPrice || ''}" min="0" step="0.01"
+           oninput="calculateItemTotal('${rowId}')"/>
+    <div class="item-total" id="total_${rowId}">0.00</div>
+    <button class="item-remove" onclick="removeItemRow('${rowId}')">
+      <i class="fa-solid fa-trash"></i>
+    </button>
+  `;
+  
+  container.appendChild(row);
+}
+
+function removeItemRow(rowId) {
+  document.getElementById(rowId)?.remove();
+  calculatePurchaseTotal();
+}
+
+function calculateItemTotal(rowId) {
+  const row = document.getElementById(rowId);
+  if (!row) return;
+  
+  const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+  const price = parseFloat(row.querySelector('.item-price').value) || 0;
+  const total = qty * price;
+  
+  row.querySelector('.item-total').textContent = total.toFixed(2);
+  calculatePurchaseTotal();
+}
+
+function calculatePurchaseTotal() {
+  let total = 0;
+  document.querySelectorAll('.item-total').forEach(el => {
+    total += parseFloat(el.textContent) || 0;
+  });
+  
+  document.getElementById('purchaseTotal').textContent = total.toFixed(2);
+  
+  // تحديث المبلغ المدفوع إذا كانت الحالة "مدفوعة"
+  const status = document.getElementById('purchasePayStatus').value;
+  if (status === 'paid') {
+    document.getElementById('purchasePaid').value = total.toFixed(2);
+  }
+  
+  calculateDebt();
+}
+
+function calculateDebt() {
+  const total = parseFloat(document.getElementById('purchaseTotal').textContent) || 0;
+  const paid = parseFloat(document.getElementById('purchasePaid').value) || 0;
+  const status = document.getElementById('purchasePayStatus').value;
+  
+  const debtInfo = document.getElementById('debtInfo');
+  
+  if (status === 'partial' && paid < total) {
+    debtInfo.style.display = 'block';
+    debtInfo.innerHTML = `المتبقي: ${window.currencyFormatter.format(total - paid)}`;
+  } else if (status === 'debt') {
+    debtInfo.style.display = 'block';
+    debtInfo.innerHTML = `الدين الكامل: ${window.currencyFormatter.format(total)}`;
+  } else {
+    debtInfo.style.display = 'none';
+  }
+}
+
+async function savePurchase() {
+  const id = document.getElementById('editPurchaseId').value;
+  const supplierId = parseInt(document.getElementById('purchaseSupplier').value);
+  const invoiceNumber = document.getElementById('purchaseNumber').value.trim();
+  const date = document.getElementById('purchaseDate').value;
+  const payStatus = document.getElementById('purchasePayStatus').value;
+  const paid = parseFloat(document.getElementById('purchasePaid').value) || 0;
+  const note = document.getElementById('purchaseNote').value.trim();
+  
+  if (!supplierId) {
+    window.toast.show('اختر المورد', 'warning');
+    return;
+  }
+  
+  if (!date) {
+    window.toast.show('اختر التاريخ', 'warning');
+    return;
+  }
+  
+  // جمع المنتجات
+  const items = [];
+  let total = 0;
+  let hasError = false;
+  
+  document.querySelectorAll('.item-row').forEach(row => {
+    const name = row.querySelector('.item-name').value.trim();
+    const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+    const price = parseFloat(row.querySelector('.item-price').value) || 0;
+    
+    if (!name || qty <= 0 || price <= 0) {
+      hasError = true;
+      return;
+    }
+    
+    const itemTotal = qty * price;
+    total += itemTotal;
+    
+    items.push({
+      name,
+      quantity: qty,
+      unitPrice: price,
+      total: itemTotal
+    });
+  });
+  
+  if (hasError || items.length === 0) {
+    window.toast.show('أدخل بيانات المنتجات بشكل صحيح', 'warning');
+    return;
+  }
+  
+  // حساب الدين
+  let debt = 0;
+  if (payStatus === 'debt') {
+    debt = total;
+  } else if (payStatus === 'partial') {
+    debt = Math.max(0, total - paid);
+  }
+  
+  const purchase = {
+    supplierId,
+    invoiceNumber: invoiceNumber || null,
+    date,
+    payStatus,
+    total,
+    paid: payStatus === 'debt' ? 0 : paid,
+    debt,
+    items,
+    note: note || null,
+    updatedAt: window.dateUtils.now()
+  };
+  
+  try {
+    if (id) {
+      purchase.id = parseInt(id);
+      await window.dbManager.put('purchases', purchase);
+      window.toast.show('تم تعديل فاتورة الشراء', 'success');
+    } else {
+      await window.dbManager.add('purchases', purchase);
+      window.toast.show('تمت إضافة فاتورة الشراء', 'success');
+    }
+    
+    window.modalManager.close('purchaseModal');
+    await loadAllData();
+    updateStats();
+    
+    // تحديث القوائم
+    filterSuppliers();
+    filterPurchases();
+    
+    // تحديث قائمة الموردين في الفلتر
+    updateSupplierFilter();
+    
+  } catch (e) {
+    window.toast.show('فشل في حفظ الفاتورة', 'error');
+  }
+}
+
+async function editPurchase(id) {
+  const purchase = allPurchases.find(p => p.id === id);
+  if (!purchase) return;
+  
+  document.getElementById('editPurchaseId').value = purchase.id;
+  document.getElementById('purchaseNumber').value = purchase.invoiceNumber || '';
+  document.getElementById('purchaseDate').value = purchase.date.split('T')[0];
+  document.getElementById('purchasePayStatus').value = purchase.payStatus || 'paid';
+  document.getElementById('purchasePaid').value = purchase.paid || 0;
+  document.getElementById('purchaseNote').value = purchase.note || '';
+  
+  // ملء قائمة الموردين
+  const supplierSelect = document.getElementById('purchaseSupplier');
+  supplierSelect.innerHTML = '<option value="">-- اختر مورداً --</option>';
+  allSuppliers.forEach(s => {
+    supplierSelect.innerHTML += `<option value="${s.id}" ${s.id === purchase.supplierId ? 'selected' : ''}>${window.sanitizer.escape(s.name)}</option>`;
+  });
+    // إضافة صفوف المنتجات
+  document.getElementById('itemsContainer').innerHTML = '';
+  if (purchase.items && purchase.items.length > 0) {
+    purchase.items.forEach(item => addItemRow(item));
+  } else {
+    addItemRow();
+  }
+  
+  // تحديث الإجمالي
+  calculatePurchaseTotal();
+  togglePaymentFields();
+  
+  document.getElementById('purchaseModalTitle').innerHTML = '<i class="fa-solid fa-file-invoice-dollar"></i> تعديل فاتورة الشراء';
+  window.modalManager.open('purchaseModal');
+}
+
+async function deletePurchase(id) {
+  const confirmed = await window.modalManager.confirm('هل أنت متأكد من حذف هذه الفاتورة؟');
+  if (!confirmed) return;
+  
+  await window.dbManager.delete('purchases', id);
+  await loadAllData();
+  updateStats();
+  filterPurchases();
+  window.toast.show('تم حذف الفاتورة', 'success');
+}
+
+// ============================================================
+//  تسديد دين المورد
+// ============================================================
+function openPayDebtModal(purchaseId) {
+  activePurchaseId = purchaseId;
+  
+  const purchase = allPurchases.find(p => p.id === purchaseId);
+  const supplier = allSuppliers.find(s => s.id === purchase.supplierId);
+  const debt = purchase.total - (purchase.paid || 0);
+  
+  document.getElementById('payDebtInfo').innerHTML = `
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+      <span>المورد:</span>
+      <span style="font-weight:800; color:var(--primary-light);">${window.sanitizer.escape(supplier.name)}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+      <span>رقم الفاتورة:</span>
+      <span>${purchase.invoiceNumber || '—'}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+      <span>إجمالي الفاتورة:</span>
+      <span>${window.currencyFormatter.format(purchase.total)}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between;">
+      <span>المتبقي:</span>
+      <span style="font-weight:900; color:var(--danger);">${window.currencyFormatter.format(debt)}</span>
+    </div>
+  `;
+  
+  document.getElementById('payDebtAmount').value = debt.toFixed(2);
+  document.getElementById('payDebtNote').value = '';
+  updatePayDebtRemaining();
+  
+  window.modalManager.open('payDebtModal');
+}
+
+function updatePayDebtRemaining() {
+  const purchase = allPurchases.find(p => p.id === activePurchaseId);
+  if (!purchase) return;
+  
+  const debt = purchase.total - (purchase.paid || 0);
+  const amount = parseFloat(document.getElementById('payDebtAmount').value) || 0;
+  const remaining = Math.max(0, debt - amount);
+  
+  const remainingEl = document.getElementById('payDebtRemaining');
+  
+  if (amount >= debt) {
+    remainingEl.innerHTML = '✅ سيتم تسديد الدين بالكامل';
+    remainingEl.style.color = 'var(--success)';
+  } else {
+    remainingEl.innerHTML = `المتبقي بعد الدفع: ${window.currencyFormatter.format(remaining)}`;
+    remainingEl.style.color = 'var(--warning)';
+  }
+}
+
+async function confirmPayDebt() {
+  const purchase = allPurchases.find(p => p.id === activePurchaseId);
+  if (!purchase) return;
+  
+  const amount = parseFloat(document.getElementById('payDebtAmount').value);
+  const note = document.getElementById('payDebtNote').value.trim();
+  
+  if (!amount || amount <= 0) {
+    window.toast.show('أدخل مبلغاً صحيحاً', 'warning');
+    return;
+  }
+  
+  const currentDebt = purchase.total - (purchase.paid || 0);
+  
+  if (amount > currentDebt) {
+    window.toast.show('المبلغ أكبر من الدين المتبقي', 'warning');
+    return;
+  }
+  
+  // تحديث الفاتورة
+  const newPaid = (purchase.paid || 0) + amount;
+  purchase.paid = newPaid;
+  purchase.debt = purchase.total - newPaid;
+  
+  if (purchase.debt <= 0) {
+    purchase.payStatus = 'paid';
+  } else if (purchase.debt < purchase.total) {
+    purchase.payStatus = 'partial';
+  }
+  
+  await window.dbManager.put('purchases', purchase);
+  
+  // تسجيل كفاتورة تسديد
+  const invoiceNumber = await window.getNextInvoiceNumber();
+  const user = window.sessionManager.getUser();
+  const now = window.dateUtils.now();
+  
+  const supplier = allSuppliers.find(s => s.id === purchase.supplierId);
+  
+  await window.dbManager.add('sales', {
+    invoiceNumber,
+    userId: user.id,
+    customerId: 0,
+    total: amount,
+    discount: 0,
+    paid: amount,
+    isDebt: 0,
+    isCancelled: 0,
+    date: now,
+    note: `تسديد دين للمورد ${supplier.name} - ${note || ''}`.trim()
+  });
+  
+  await loadAllData();
+  window.modalManager.close('payDebtModal');
+  
+  // تحديث القوائم
+  filterPurchases();
+  updateStats();
+  
+  window.toast.show(`✅ تم تسديد ${window.currencyFormatter.format(amount)}`, 'success');
+}
+
+// ============================================================
+//  تحديث قائمة الموردين في الفلتر
+// ============================================================
+function updateSupplierFilter() {
+  const filter = document.getElementById('supplierFilter');
+  filter.innerHTML = '<option value="0">كل الموردين</option>';
+  
+  allSuppliers.forEach(s => {
+    filter.innerHTML += `<option value="${s.id}">${window.sanitizer.escape(s.name)}</option>`;
+  });
+}
+
+// ============================================================
+//  تحديث الكل
+// ============================================================
+async function refreshSuppliers() {
+  await loadAllData();
+  updateStats();
+  filterSuppliers();
+  filterPurchases();
+  updateSupplierFilter();
+  window.toast.show('تم تحديث البيانات', 'success');
+}
+
+// ============================================================
+//  تسجيل الخروج
+// ============================================================
+function doLogout() {
+  window.modalManager.confirm('هل تريد تسجيل الخروج؟').then(confirmed => {
+    if (confirmed) {
+      window.sessionManager.logout();
+    }
+  });
+}
+
+// ============================================================
+//  بدء التشغيل
+// ============================================================
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

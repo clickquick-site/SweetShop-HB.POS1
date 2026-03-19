@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="shortcut icon" href="favicon.svg"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HP-POS - إدارة المستخدمين</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <style>
+    /* =========================================
+       تخطيط متطور لإدارة المستخدمين
+    ========================================= */
+    .users-layout {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: var(--bg-dark);
+    }
+
+    /* بطاقات الإحصائيات */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      transition: all 0.2s ease;
+    }
+
+    .stat-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .stat-icon.total {
+      background: rgba(124, 58, 237, 0.15);
+      color: #7c3aed;
+    }
+
+    .stat-icon.admin {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .stat-icon.manager {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+
+    .stat-icon.seller {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .stat-content {
+      flex: 1;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 900;
+      font-family: 'Impact', sans-serif;
+      color: var(--text-primary);
+    }
+
+    .stat-sub {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* بطاقات المستخدمين */
+    .users-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .user-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .user-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+
+    .user-card.admin::before {
+      background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+
+    .user-card.manager::before {
+      background: linear-gradient(90deg, #f59e0b, #d97706);
+    }
+
+    .user-card.seller::before {
+      background: linear-gradient(90deg, #10b981, #059669);
+    }
+
+    .user-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.15);
+    }
+
+    .user-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .user-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .user-role-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .role-admin {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .role-manager {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+
+    .role-seller {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .user-details {
+      margin: 15px 0;
+      padding: 10px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .user-detail {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      font-size: 0.85rem;
+    }
+
+    .user-detail-label {
+      color: var(--text-secondary);
+    }
+
+    .user-detail-value {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .user-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .action-btn.primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .action-btn.warning {
+      background: var(--warning);
+      color: #fff;
+    }
+
+    .action-btn.danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .action-btn.secondary {
+      background: var(--bg-input);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* جدول سجل النشاطات */
+    .logs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .logs-table th {
+      background: var(--bg-dark);
+      color: var(--text-secondary);
+      font-weight: 700;
+      padding: 12px 10px;
+      text-align: right;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .logs-table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logs-table tbody tr:hover {
+      background: rgba(124, 58, 237, 0.05);
+    }
+
+    /* نموذج إضافة مستخدم */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full-width {
+      grid-column: span 2;
+    }
+
+    .form-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-label i {
+      color: var(--primary);
+      font-size: 0.8rem;
+    }
+
+    .form-input {
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      padding: 10px 14px;
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    .form-select {
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      padding: 10px 14px;
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .role-info {
+      background: var(--bg-dark);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .password-strength {
+      margin-top: 5px;
+      font-size: 0.75rem;
+    }
+
+    .strength-weak {
+      color: var(--danger);
+    }
+
+    .strength-medium {
+      color: var(--warning);
+    }
+
+    .strength-strong {
+      color: var(--success);
+    }
+
+    /* شريط البحث */
+    .search-section {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrapper {
+      flex: 2;
+      min-width: 280px;
+      position: relative;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0 16px;
+      transition: all 0.2s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    .search-box i {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 14px 10px;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px;
+    }
+
+    .filter-tab {
+      padding: 8px 20px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      white-space: nowrap;
+    }
+
+    .filter-tab:hover {
+      background: var(--bg-medium);
+      color: var(--text-primary);
+    }
+
+    .filter-tab.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* التبويبات */
+    .tabs-modern {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+      overflow-x: auto;
+    }
+
+    .tab-modern {
+      padding: 8px 20px;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      border-bottom: none;
+    }
+
+    .tab-modern:hover {
+      color: var(--text-primary);
+      background: rgba(124, 58, 237, 0.05);
+    }
+
+    .tab-modern.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+<div class="bg-animated"></div>
+
+<div class="users-layout">
+  <!-- الهيدر -->
+  <header class="app-header">
+    <button class="menu-btn" id="menuBtn">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <a href="sale.html" class="back-btn" title="واجهة البيع">
+      <i class="fa-solid fa-cash-register"></i>
+    </a>
+    
+    <span class="store-name" id="headerStoreName">جاري التحميل...</span>
+    
+    <div class="app-brand">
+      <span class="brand-title">HP-POS</span>
+      <span class="brand-clock" id="clockDisplay"></span>
+    </div>
+  </header>
+
+  <!-- المحتوى الرئيسي -->
+  <div style="flex:1; padding:20px; overflow-y:auto;">
+    
+    <!-- شريط الإجراءات العلوي -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h1 style="font-size:1.5rem; color:var(--primary-light); display:flex; align-items:center; gap:10px;">
+        <i class="fa-solid fa-users-gear"></i>
+        <span>إدارة المستخدمين</span>
+      </h1>
+      
+      <button class="btn btn-primary" onclick="openAddUserModal()">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>إضافة مستخدم</span>
+      </button>
+    </div>
+
+    <!-- بطاقات الإحصائيات -->
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- التبويبات -->
+    <div class="tabs-modern">
+      <button class="tab-modern active" onclick="switchTab('users')">
+        <i class="fa-solid fa-users"></i>
+        <span>المستخدمون</span>
+      </button>
+      <button class="tab-modern" onclick="switchTab('logs')">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>سجل النشاطات</span>
+      </button>
+      <button class="tab-modern" onclick="switchTab('security')">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>الأمان</span>
+      </button>
+    </div>
+
+    <!-- ========== تبويب: المستخدمون ========== -->
+    <div class="tab-content active" id="tab-users">
+      <div class="search-section">
+        <div class="search-wrapper">
+          <div class="search-box">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" id="userSearch" 
+                   placeholder="ابحث باسم المستخدم..."
+                   oninput="filterUsers()"/>
+          </div>
+        </div>
+        
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="filterByRole('all')">الكل</button>
+          <button class="filter-tab" onclick="filterByRole('admin')">مدير</button>
+          <button class="filter-tab" onclick="filterByRole('manager')">مدير مساعد</button>
+          <button class="filter-tab" onclick="filterByRole('seller')">بائع</button>
+        </div>
+      </div>
+
+      <div class="users-grid" id="usersGrid"></div>
+    </div>
+
+    <!-- ========== تبويب: سجل النشاطات ========== -->
+    <div class="tab-content" id="tab-logs">
+      <div class="search-section">
+        <div class="search-wrapper">
+          <div class="search-box">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" id="logSearch" 
+                   placeholder="ابحث في السجل..."
+                   oninput="filterLogs()"/>
+          </div>
+        </div>
+        
+        <select class="form-input" style="width:150px;" id="logType" onchange="filterLogs()">
+          <option value="all">كل الأنشطة</option>
+          <option value="login">تسجيل دخول</option>
+          <option value="sale">بيع</option>
+          <option value="debt">دين</option>
+          <option value="payment">تسديد</option>
+          <option value="user">مستخدم</option>
+        </select>
+      </div>
+
+      <div class="table-container">
+        <div style="overflow-x:auto; max-height:500px;">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>التاريخ والوقت</th>
+                <th>المستخدم</th>
+                <th>النشاط</th>
+                <th>التفاصيل</th>
+              </tr>
+            </thead>
+            <tbody id="logsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== تبويب: الأمان ========== -->
+    <div class="tab-content" id="tab-security">
+
+      <div class="card" style="max-width:660px; margin:0 auto;">
+        <h4>
+          <i class="fa-solid fa-shield-halved"></i>
+          إعداد استرداد كلمة مرور المدير الرئيسي
+        </h4>
+
+        <div class="alert alert-info">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>
+            يُستخدم هذا القسم لضبط آلية الاسترداد في حال نسيان كلمة مرور المدير.
+            يظهر الاسترداد في صفحة الدخول عند الضغط على <strong>«نسيت الرقم السري؟»</strong>.
+          </span>
+        </div>
+
+        <!-- ─── سؤال الأمان ─── -->
+        <div style="border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:14px; background:var(--bg-dark);">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+            <div style="width:38px;height:38px;border-radius:50%;background:rgba(124,58,237,0.13);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:1.05rem;flex-shrink:0;">
+              <i class="fa-solid fa-circle-question"></i>
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:800; color:var(--text-primary);">سؤال الأمان</div>
+              <div style="font-size:0.78rem;color:var(--text-secondary);">يُطلب الإجابة عليه عند محاولة استرداد كلمة المرور</div>
+            </div>
+            <div id="secQBadge"></div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">
+              <i class="fa-solid fa-comment-dots"></i> نص السؤال
+            </label>
+            <input type="text" class="input-field" id="secQ"
+                   placeholder="مثال: ما اسم أول مدرسة التحقت بها؟"
+                   autocomplete="off"/>
+          </div>
+
+          <div class="input-group" style="margin-bottom:0;">
+            <label class="input-label">
+              <i class="fa-solid fa-pen-to-square"></i> الإجابة السرية
+              <span style="font-size:0.68rem;color:var(--text-secondary);font-weight:600;">(ستُشفَّر — غير حساسة لحالة الأحرف)</span>
+            </label>
+            <input type="text" class="input-field" id="secA"
+                   placeholder="أدخل إجابتك"
+                   autocomplete="off"/>
+          </div>
+        </div>
+
+        <!-- ─── رمز الطوارئ ─── -->
+        <div style="border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:18px; background:var(--bg-dark);">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+            <div style="width:38px;height:38px;border-radius:50%;background:rgba(245,158,11,0.12);display:flex;align-items:center;justify-content:center;color:var(--warning);font-size:1.05rem;flex-shrink:0;">
+              <i class="fa-solid fa-barcode"></i>
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:800; color:var(--text-primary);">رمز الطوارئ</div>
+              <div style="font-size:0.78rem;color:var(--text-secondary);">احتياطي عند غياب سؤال الأمان أو نسيان إجابته</div>
+            </div>
+            <div id="secEBadge"></div>
+          </div>
+
+          <div class="input-group" style="margin-bottom:10px;">
+            <label class="input-label">
+              <i class="fa-solid fa-key"></i> الرمز
+            </label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" class="input-field" id="secE"
+                     placeholder="XXXX-XXXX-XXXX-XXXX"
+                     dir="ltr" autocomplete="off"
+                     style="text-align:center;letter-spacing:3px;font-family:monospace,var(--font-main);"
+                     oninput="secFmt(this)"/>
+              <button class="btn btn-ghost" onclick="secGen()" title="توليد رمز عشوائي">
+                <i class="fa-solid fa-dice"></i> توليد
+              </button>
+              <button class="btn btn-ghost" onclick="secCopy()" id="secCopyBtn" title="نسخ">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="alert alert-warning" style="padding:9px 13px;font-size:0.8rem;margin-bottom:0;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>احتفظ بهذا الرمز خارج النظام — لن تتمكن من رؤيته بعد الحفظ</span>
+          </div>
+        </div>
+
+        <!-- ─── أزرار ─── -->
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="secRefresh()">
+            <i class="fa-solid fa-rotate"></i> تحديث الحالة
+          </button>
+          <button class="btn btn-success" onclick="secSave()">
+            <i class="fa-solid fa-floppy-disk"></i> حفظ إعدادات الأمان
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /tab-security -->
+
+  </div>
+</div>
+
+<!-- ========== Modal: تغيير كلمة المرور — موحد ========== -->
+<div class="modal-overlay" id="changePwdModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-title" id="cpTitle">
+        <i class="fa-solid fa-key"></i> تغيير كلمة المرور
+      </span>
+      <button class="modal-close" onclick="closeModal('changePwdModal')">✕</button>
+    </div>
+    <input type="hidden" id="cpUid"/>
+
+    <!-- كلمة المرور الحالية (تظهر عند الحاجة فقط) -->
+    <div class="input-group" id="cpCurWrap">
+      <label class="input-label">
+        <i class="fa-solid fa-lock"></i> كلمة المرور الحالية
+      </label>
+      <div style="position:relative;">
+        <input type="password" class="input-field" id="cpCur"
+               placeholder="أدخل كلمة المرور الحالية"
+               style="padding-left:42px;"/>
+        <button type="button" onclick="cpEye('cpCur',this)"
+                style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.9rem;transition:color 0.2s;">
+          <i class="fa-solid fa-eye"></i>
+        </button>
+      </div>
+      <div style="font-size:0.73rem;color:var(--text-secondary);margin-top:2px;" id="cpCurNote"></div>
+    </div>
+
+    <div class="input-group">
+      <label class="input-label">
+        <i class="fa-solid fa-lock-open"></i> كلمة المرور الجديدة
+      </label>
+      <div style="position:relative;">
+        <input type="password" class="input-field" id="cpNew"
+               placeholder="أدخل كلمة المرور الجديدة"
+               style="padding-left:42px;"
+               oninput="cpStr();cpMtch()"/>
+        <button type="button" onclick="cpEye('cpNew',this)"
+                style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--text-secondary);cursor:pointer;padding:0;font-size:0.9rem;transition:color 0.2s;">
+          <i class="fa-solid fa-eye"></i>
+        </button>
+      </div>
+      <div style="display:flex;gap:3px;margin-top:5px;">
+        <div style="height:3px;flex:1;border-radius:3px;background:var(--border);transition:background 0.3s;" id="cs1"></div>
+        <div style="height:3px;flex:1;border-radius:3px;background:var(--border);transition:background 0.3s;" id="cs2"></div>
+        <div style="height:3px;flex:1;border-radius:3px;background:var(--border);transition:background 0.3s;" id="cs3"></div>
+        <div style="height:3px;flex:1;border-radius:3px;background:var(--border);transition:background 0.3s;" id="cs4"></div>
+      </div>
+      <div style="font-size:0.73rem;margin-top:2px;" id="cpStrLbl"></div>
+    </div>
+
+    <div class="input-group" style="margin-bottom:0;">
+      <label class="input-label">
+        <i class="fa-solid fa-lock"></i> تأكيد كلمة المرور
+      </label>
+      <input type="password" class="input-field" id="cpConf"
+             placeholder="أعد إدخال كلمة المرور الجديدة"
+             oninput="cpMtch()"/>
+      <div style="font-size:0.73rem;margin-top:2px;" id="cpMtchLbl"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-warning" onclick="cpSave()" id="cpSaveBtn">
+        <i class="fa-solid fa-key"></i> تغيير كلمة المرور
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('changePwdModal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="userModalTitle">
+        <i class="fa-solid fa-user-plus"></i> إضافة مستخدم جديد
+      </span>
+      <button class="modal-close" onclick="closeModal('userModal')">✕</button>
+    </div>
+    
+    <input type="hidden" id="editUserId"/>
+    
+    <div class="form-grid">
+      <div class="form-group full-width">
+        <label class="form-label">
+          <i class="fa-solid fa-user"></i>
+          <span>اسم المستخدم *</span>
+        </label>
+        <input type="text" class="form-input" id="userName" 
+               placeholder="أدخل اسم المستخدم" autocomplete="off"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-lock"></i>
+          <span>كلمة المرور</span>
+        </label>
+        <input type="password" class="form-input" id="userPassword" 
+               placeholder="أدخل كلمة المرور" autocomplete="new-password"
+               oninput="checkPasswordStrength()"/>
+        <div class="password-strength" id="passwordStrength"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <i class="fa-solid fa-lock"></i>
+          <span>تأكيد كلمة المرور</span>
+        </label>
+        <input type="password" class="form-input" id="userPasswordConfirm" 
+               placeholder="أعد إدخال كلمة المرور" autocomplete="new-password"
+               oninput="checkPasswordMatch()"/>
+        <div class="password-strength" id="passwordMatch"></div>
+      </div>
+
+      <div class="form-group full-width">
+        <label class="form-label">
+          <i class="fa-solid fa-shield"></i>
+          <span>الصلاحية</span>
+        </label>
+        <select class="form-select" id="userRole" onchange="updateRoleInfo()">
+          <option value="seller">👤 بائع - صلاحيات محدودة</option>
+          <option value="manager">🛡️ مدير مساعد - إدارة المخزون والتقارير</option>
+        </select>
+      </div>
+
+      <div class="form-group full-width">
+        <div class="role-info" id="roleInfo">
+          صلاحيات البائع: إتمام عمليات البيع، إدارة الديون، عرض المنتجات
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-success" onclick="saveUser()" id="saveUserBtn">
+        <i class="fa-solid fa-floppy-disk"></i> حفظ
+      </button>
+      <button class="btn btn-secondary" onclick="closeModal('userModal')">
+        إلغاء
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar" id="sidebar">
+  <!-- محتوى sidebar قياسي -->
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="app.js"></script>
+<script src="sync.js"></script>
+<script>
+// ============================================================
+//  HP-POS - users.js  v8.1.0  (محسن بالكامل)
+// ============================================================
+
+// متغيرات عامة
+let allUsers = [];
+let allLogs = [];
+let currentUser = null;
+
+let currentFilter = 'all';
+let searchQuery = '';
+
+// ============================================================
+//  التهيئة
+// ============================================================
+async function init() {
+  // التحقق من الصلاحية (admin فقط)
+  if (!window.sessionManager.requireRole(['admin'])) return;
+  
+  // تهيئة التطبيق
+  await window.initApp();
+  
+  // إخفاء الإشعارات في صفحات الإدارة
+  const _bell = document.getElementById('_notifBell');
+  if (_bell) _bell.remove();
+  
+  // تحميل البيانات
+  await loadAllData();
+  
+  // الحصول على المستخدم الحالي
+  currentUser = window.sessionManager.getUser();
+  
+  // تحديث الواجهة
+  updateStats();
+  renderUsers();
+
+  // ── تحديثات آنية: إعادة تحميل المستخدمين عند أي تغيير ───────
+  const _rtUsrReload = _debounce(async () => {
+    await loadAllData();
+    updateStats();
+    renderUsers();
+  }, 400);
+  window.realtimeManager?.subscribe(
+    ['users', 'logs'],
+    _rtUsrReload
+  );
+
+  console.log('✅ صفحة المستخدمين جاهزة');
+}
+
+// ============================================================
+//  تحميل البيانات
+// ============================================================
+async function loadAllData() {
+  allUsers = await window.dbManager.getAll('users');
+  allLogs = await window.dbManager.getAll('logs');
+  
+  // ترتيب المستخدمين
+  allUsers.sort((a, b) => {
+    if (a.role === 'admin') return -1;
+    if (b.role === 'admin') return 1;
+    return a.username.localeCompare(b.username);
+  });
+  
+  // ترتيب السجلات تنازلياً
+  allLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+// ============================================================
+//  تحديث الإحصائيات
+// ============================================================
+function updateStats() {
+  const totalUsers = allUsers.length;
+  const adminCount = allUsers.filter(u => u.role === 'admin').length;
+  const managerCount = allUsers.filter(u => u.role === 'manager').length;
+  const sellerCount = allUsers.filter(u => u.role === 'seller').length;
+  
+  const today = window.dateUtils.today();
+  const todayLogins = allLogs.filter(l => 
+    l.action === 'login' && l.date.startsWith(today)
+  ).length;
+  
+  const statsGrid = document.getElementById('statsGrid');
+  statsGrid.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon total">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">إجمالي المستخدمين</div>
+        <div class="stat-value">${totalUsers}</div>
+        <div class="stat-sub">مستخدم</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon admin">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">مدير رئيسي</div>
+        <div class="stat-value">${adminCount}</div>
+        <div class="stat-sub">صلاحية كاملة</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon manager">
+        <i class="fa-solid fa-shield"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">مدير مساعد</div>
+        <div class="stat-value">${managerCount}</div>
+        <div class="stat-sub">إدارة متقدمة</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon seller">
+        <i class="fa-solid fa-user"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">بائع</div>
+        <div class="stat-value">${sellerCount}</div>
+        <div class="stat-sub">صلاحيات محدودة</div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+//  التبويبات
+// ============================================================
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-modern').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  
+  document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+  document.getElementById(`tab-${tabId}`).classList.add('active');
+  
+  if (tabId === 'logs')     renderLogs();
+  if (tabId === 'security') secRefresh();
+}
+
+// ============================================================
+//  تصفية وعرض المستخدمين
+// ============================================================
+function filterByRole(role) {
+  currentFilter = role;
+  
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  
+  renderUsers();
+}
+
+function filterUsers() {
+  searchQuery = document.getElementById('userSearch').value.toLowerCase();
+  renderUsers();
+}
+
+function renderUsers() {
+  let filtered = allUsers;
+  
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(u => u.role === currentFilter);
+  }
+  
+  if (searchQuery) {
+    filtered = filtered.filter(u => 
+      u.username.toLowerCase().includes(searchQuery)
+    );
+  }
+  
+  const grid = document.getElementById('usersGrid');
+  
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1; text-align:center; padding:60px; background:var(--bg-card); border-radius:var(--radius);">
+        <i class="fa-solid fa-users-slash" style="font-size:3rem; opacity:0.3; margin-bottom:15px;"></i>
+        <p style="font-size:1rem; color:var(--text-secondary);">لا يوجد مستخدمون</p>
+      </div>
+    `;
+    return;
+  }
+  
+  grid.innerHTML = filtered.map(user => {
+    const roleClass = user.role === 'admin' ? 'admin' : user.role === 'manager' ? 'manager' : 'seller';
+    const roleName = user.role === 'admin' ? 'مدير رئيسي' : user.role === 'manager' ? 'مدير مساعد' : 'بائع';
+    const roleIcon = user.role === 'admin' ? '👑' : user.role === 'manager' ? '🛡️' : '👤';
+    
+    const userLogs = allLogs.filter(l => l.userId === user.id).length;
+    const lastLogin = allLogs
+      .filter(l => l.userId === user.id && l.action === 'login')
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    
+    const isCurrentUser = currentUser && currentUser.id === user.id;
+    
+    return `
+      <div class="user-card ${roleClass}">
+        <div class="user-header">
+          <div class="user-avatar">
+            ${user.username.charAt(0).toUpperCase()}
+          </div>
+          <div class="user-info">
+            <div class="user-name">
+              ${window.sanitizer.escape(user.username)}
+              ${isCurrentUser ? '<span style="color:var(--success); font-size:0.7rem; margin-right:5px;">(أنت)</span>' : ''}
+            </div>
+            <div>
+              <span class="user-role-badge role-${roleClass}">
+                ${roleIcon} ${roleName}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="user-details">
+          <div class="user-detail">
+            <span class="user-detail-label">تاريخ الإنشاء:</span>
+            <span class="user-detail-value">${window.dateUtils.formatDate(user.createdAt)}</span>
+          </div>
+          <div class="user-detail">
+            <span class="user-detail-label">عدد النشاطات:</span>
+            <span class="user-detail-value">${userLogs}</span>
+          </div>
+          ${lastLogin ? `
+            <div class="user-detail">
+              <span class="user-detail-label">آخر دخول:</span>
+              <span class="user-detail-value">${window.dateUtils.formatDateTime(lastLogin.date)}</span>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="user-actions">
+          ${user.role === 'admin' ? `
+            <button class="action-btn warning" onclick="openChangePwd(${user.id})">
+              <i class="fa-solid fa-key"></i> تغيير كلمة المرور
+            </button>
+          ` : `
+            <button class="action-btn primary" onclick="editUser(${user.id})">
+              <i class="fa-solid fa-pen"></i> تعديل
+            </button>
+            <button class="action-btn warning" onclick="openChangePwd(${user.id})" title="تغيير كلمة المرور">
+              <i class="fa-solid fa-key"></i>
+            </button>
+            <button class="action-btn danger" onclick="deleteUser(${user.id})">
+              <i class="fa-solid fa-trash"></i> حذف
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================
+//  إضافة/تعديل مستخدم
+// ============================================================
+function openAddUserModal() {
+  document.getElementById('editUserId').value = '';
+  document.getElementById('userName').value = '';
+  document.getElementById('userPassword').value = '';
+  document.getElementById('userPasswordConfirm').value = '';
+  document.getElementById('userRole').value = 'seller';
+  document.getElementById('userModalTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i> إضافة مستخدم جديد';
+  document.getElementById('passwordStrength').innerHTML = '';
+  document.getElementById('passwordMatch').innerHTML = '';
+  document.getElementById('saveUserBtn').disabled = false;
+  
+  updateRoleInfo();
+  window.modalManager.open('userModal');
+  setTimeout(() => document.getElementById('userName').focus(), 200);
+}
+
+async function editUser(id) {
+  const user = allUsers.find(u => u.id === id);
+  if (!user || user.role === 'admin') return;
+  
+  document.getElementById('editUserId').value = user.id;
+  document.getElementById('userName').value = user.username;
+  document.getElementById('userPassword').value = '';
+  document.getElementById('userPasswordConfirm').value = '';
+  document.getElementById('userRole').value = user.role;
+  document.getElementById('userModalTitle').innerHTML = '<i class="fa-solid fa-user-pen"></i> تعديل بيانات المستخدم';
+  document.getElementById('passwordStrength').innerHTML = '';
+  document.getElementById('passwordMatch').innerHTML = '';
+  document.getElementById('saveUserBtn').disabled = false;
+  
+  updateRoleInfo();
+  window.modalManager.open('userModal');
+}
+
+function updateRoleInfo() {
+  const role = document.getElementById('userRole').value;
+  const info = document.getElementById('roleInfo');
+  
+  if (role === 'manager') {
+    info.innerHTML = 'صلاحيات المدير المساعد: إدارة المخزون، الموردين، التقارير، الإعدادات - غير مسموح بإدارة المستخدمين';
+  } else {
+    info.innerHTML = 'صلاحيات البائع: إتمام عمليات البيع، إدارة الديون، عرض المنتجات - غير مسموح بالوصول للإعدادات';
+  }
+}
+
+function checkPasswordStrength() {
+  const password = document.getElementById('userPassword').value;
+  const strengthEl = document.getElementById('passwordStrength');
+  
+  if (!password) {
+    strengthEl.innerHTML = '';
+    return;
+  }
+  
+  let strength = 0;
+  if (password.length >= 8) strength++;
+  if (password.match(/[a-z]/)) strength++;
+  if (password.match(/[A-Z]/)) strength++;
+  if (password.match(/[0-9]/)) strength++;
+  if (password.match(/[^a-zA-Z0-9]/)) strength++;
+  
+  let text = '', className = '';
+  if (strength <= 2) {
+    text = 'ضعيفة';
+    className = 'strength-weak';
+  } else if (strength <= 4) {
+    text = 'متوسطة';
+    className = 'strength-medium';
+  } else {
+    text = 'قوية';
+    className = 'strength-strong';
+  }
+  
+  strengthEl.innerHTML = `قوة كلمة المرور: <span class="${className}">${text}</span>`;
+}
+
+function checkPasswordMatch() {
+  const password = document.getElementById('userPassword').value;
+  const confirm = document.getElementById('userPasswordConfirm').value;
+  const matchEl = document.getElementById('passwordMatch');
+  
+  if (!confirm) {
+    matchEl.innerHTML = '';
+    return;
+  }
+  
+  if (password === confirm) {
+    matchEl.innerHTML = '<span class="strength-strong">✓ كلمة المرور متطابقة</span>';
+  } else {
+    matchEl.innerHTML = '<span class="strength-weak">✗ كلمة المرور غير متطابقة</span>';
+  }
+}
+
+async function saveUser() {
+  const id = document.getElementById('editUserId').value;
+  const username = document.getElementById('userName').value.trim();
+  const password = document.getElementById('userPassword').value;
+  const confirm = document.getElementById('userPasswordConfirm').value;
+  const role = document.getElementById('userRole').value;
+  
+  if (!username) {
+    window.toast.show('اسم المستخدم مطلوب', 'warning');
+    document.getElementById('userName').focus();
+    return;
+  }
+  
+  // التحقق من تكرار الاسم
+  const existing = allUsers.find(u => 
+    u.username === username && u.id !== parseInt(id)
+  );
+  
+  if (existing) {
+    window.toast.show('اسم المستخدم موجود مسبقاً', 'warning');
+    return;
+  }
+  
+  if (!id && !password) {
+    window.toast.show('كلمة المرور مطلوبة للمستخدم الجديد', 'warning');
+    document.getElementById('userPassword').focus();
+    return;
+  }
+  
+  if (password && password !== confirm) {
+    window.toast.show('كلمة المرور غير متطابقة', 'warning');
+    return;
+  }
+  
+  const userData = {
+    username,
+    role,
+    updatedAt: window.dateUtils.now()
+  };
+  
+  if (!id) {
+    userData.createdAt = window.dateUtils.now();
+  }
+  
+  if (password) {
+    userData.password = await window.passwordManager.hash(password);
+  }
+  
+  try {
+    if (id) {
+      const existingUser = await window.dbManager.get('users', parseInt(id));
+      userData.id = parseInt(id);
+      if (!password) {
+        userData.password = existingUser.password;
+      }
+      await window.dbManager.put('users', userData);
+      window.toast.show('تم تعديل المستخدم', 'success');
+    } else {
+      await window.dbManager.add('users', userData);
+      window.toast.show('تمت إضافة المستخدم', 'success');
+    }
+    
+    // تسجيل النشاط
+    await window.dbManager.add('logs', {
+      action: 'user',
+      userId: currentUser?.id,
+      details: `${id ? 'تعديل' : 'إضافة'} مستخدم: ${username}`,
+      date: window.dateUtils.now()
+    });
+    
+    window.modalManager.close('userModal');
+    await loadAllData();
+    renderUsers();
+    updateStats();
+    
+  } catch (e) {
+    window.toast.show('فشل في حفظ المستخدم', 'error');
+  }
+}
+
+async function deleteUser(id) {
+  const user = allUsers.find(u => u.id === id);
+  if (!user || user.role === 'admin') {
+    window.toast.show('لا يمكن حذف المدير الرئيسي', 'warning');
+    return;
+  }
+  
+  const confirmed = await window.modalManager.confirm(`هل أنت متأكد من حذف المستخدم "${user.username}"؟`);
+  if (!confirmed) return;
+  
+  await window.dbManager.delete('users', id);
+  
+  // تسجيل النشاط
+  await window.dbManager.add('logs', {
+    action: 'user',
+    userId: currentUser?.id,
+    details: `حذف مستخدم: ${user.username}`,
+    date: window.dateUtils.now()
+  });
+  
+  await loadAllData();
+  renderUsers();
+  updateStats();
+  window.toast.show('تم حذف المستخدم', 'success');
+}
+
+// ============================================================
+//  تغيير كلمة المرور — موحد (modal-overlay من style.css)
+// ============================================================
+let _cpU = null;
+
+async function openChangePwd(userId) {
+  const user = allUsers.find(u => u.id === userId);
+  if (!user) return;
+  _cpU = user;
+
+  const needCur = user.role === 'admin' || (currentUser?.id === userId);
+
+  document.getElementById('cpUid').value  = userId;
+  document.getElementById('cpTitle').innerHTML =
+    `<i class="fa-solid fa-key"></i> تغيير كلمة مرور: ${window.sanitizer.escape(user.username)}`;
+
+  const wrap = document.getElementById('cpCurWrap');
+  document.getElementById('cpCurNote').textContent = needCur
+    ? (user.role === 'admin' ? 'مطلوب لأنك تغيّر كلمة مرور المدير' : 'مطلوب لأنك تغيّر كلمة مرور حسابك الخاص')
+    : '';
+  wrap.style.display = needCur ? '' : 'none';
+
+  ['cpCur','cpNew','cpConf'].forEach(id => document.getElementById(id).value='');
+  ['cs1','cs2','cs3','cs4'].forEach(id => document.getElementById(id).style.background='var(--border)');
+  document.getElementById('cpStrLbl').textContent='';
+  document.getElementById('cpMtchLbl').textContent='';
+
+  window.modalManager.open('changePwdModal');
+  setTimeout(() => document.getElementById(needCur ? 'cpCur' : 'cpNew')?.focus(), 180);
+}
+
+function cpEye(id, btn) {
+  const inp = document.getElementById(id), ic = btn.querySelector('i');
+  inp.type = inp.type==='password' ? 'text' : 'password';
+  ic.className = inp.type==='password' ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+}
+
+function cpStr() {
+  const p = document.getElementById('cpNew').value;
+  const C = ['var(--danger)','var(--warning)','#3B82F6','var(--success)'];
+  const L = ['ضعيفة','متوسطة','جيدة','قوية 💪'];
+  if (!p) { ['cs1','cs2','cs3','cs4'].forEach(id=>document.getElementById(id).style.background='var(--border)'); document.getElementById('cpStrLbl').textContent=''; return; }
+  let s=0; if(p.length>=6)s++; if(p.match(/[a-zA-Z]/))s++; if(p.match(/[0-9]/))s++; if(p.match(/[^a-zA-Z0-9]/))s++;
+  s=Math.max(0,s-1);
+  ['cs1','cs2','cs3','cs4'].forEach((id,i)=>document.getElementById(id).style.background=i<=s?C[s]:'var(--border)');
+  document.getElementById('cpStrLbl').innerHTML=`<span style="color:${C[s]};">● ${L[s]}</span>`;
+}
+
+function cpMtch() {
+  const p=document.getElementById('cpNew').value, c=document.getElementById('cpConf').value, el=document.getElementById('cpMtchLbl');
+  if(!c){el.textContent='';return;}
+  el.innerHTML=p===c?'<span style="color:var(--success);"><i class="fa-solid fa-check"></i> متطابقتان</span>':'<span style="color:var(--danger);"><i class="fa-solid fa-xmark"></i> غير متطابقتين</span>';
+}
+
+async function cpSave() {
+  if (!_cpU) return;
+  const newP=document.getElementById('cpNew').value, conf=document.getElementById('cpConf').value, cur=document.getElementById('cpCur').value;
+  const needCur = document.getElementById('cpCurWrap').style.display !== 'none';
+
+  if (!newP)       { window.toast.show('⚠ كلمة المرور الجديدة مطلوبة','warning'); return; }
+  if (newP.length<4){ window.toast.show('⚠ 4 أحرف على الأقل','warning'); return; }
+  if (newP!==conf) { window.toast.show('❌ كلمتا المرور غير متطابقتين','warning'); return; }
+  if (needCur) {
+    if (!cur) { window.toast.show('⚠ كلمة المرور الحالية مطلوبة','warning'); return; }
+    const ok = await window.passwordManager.verify(cur, _cpU.password);
+    if (!ok) { window.toast.show('❌ كلمة المرور الحالية غير صحيحة','error'); return; }
+  }
+
+  const btn=document.getElementById('cpSaveBtn');
+  btn.classList.add('loading'); btn.innerHTML='<i class="fa-solid fa-spinner"></i> جاري الحفظ...';
+  try {
+    _cpU.password  = await window.passwordManager.hash(newP);
+    _cpU.updatedAt = window.dateUtils.now();
+    await window.dbManager.put('users', _cpU);
+    await window.dbManager.add('logs',{action:'password_change',userId:currentUser?.id,details:`تغيير كلمة مرور: ${_cpU.username}`,date:window.dateUtils.now()});
+    btn.classList.remove('loading');
+    window.modalManager.close('changePwdModal');
+    window.toast.show(`✅ تم تغيير كلمة مرور "${_cpU.username}"`, 'success');
+    await loadAllData();
+  } catch(e) {
+    btn.classList.remove('loading'); btn.innerHTML='<i class="fa-solid fa-key"></i> تغيير كلمة المرور';
+    window.toast.show('❌ فشل في تغيير كلمة المرور','error');
+  }
+}
+
+// للتوافق مع الكود القديم
+function openAdminPasswordModal(){ const a=allUsers.find(u=>u.role==='admin'); if(a) openChangePwd(a.id); }
+function checkNewPasswordStrength(){}
+function checkNewPasswordMatch(){}
+async function changeAdminPassword(){ await cpSave(); }
+
+// ============================================================
+//  تبويب الأمان — إعداد استرداد المدير
+// ============================================================
+async function secRefresh() {
+  // السؤال
+  let qOk=false, eOk=false;
+  try { const q=await window.dbManager.get('settings','recoveryQuestion'), a=await window.dbManager.get('settings','recoveryAnswer'); if(q?.value&&a?.value){qOk=true;document.getElementById('secQ').value=q.value;} } catch(_){}
+  // الرمز
+  try { const e=await window.dbManager.get('settings','emergencyCode'); eOk=!!e?.value; } catch(_){}
+
+  const qb=document.getElementById('secQBadge'), eb=document.getElementById('secEBadge');
+  if(qb) qb.innerHTML=qOk?'<span class="badge badge-success"><i class="fa-solid fa-check"></i> مُعدَّ</span>':'<span class="badge badge-warning"><i class="fa-solid fa-minus"></i> غير مُعدَّ</span>';
+  if(eb) eb.innerHTML=eOk?'<span class="badge badge-success"><i class="fa-solid fa-check"></i> موجود</span>':'<span class="badge badge-neutral"><i class="fa-solid fa-minus"></i> غير مُعيَّن</span>';
+
+  document.getElementById('secA').value='';
+  document.getElementById('secE').value='';
+}
+
+function secFmt(inp) {
+  let v=inp.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase().slice(0,16), o='';
+  for(let i=0;i<v.length;i++){if(i>0&&i%4===0)o+='-';o+=v[i];} inp.value=o;
+}
+
+function secGen() {
+  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let r='';
+  for(let i=0;i<16;i++){if(i>0&&i%4===0)r+='-'; r+=c[Math.floor(Math.random()*c.length)];}
+  document.getElementById('secE').value=r;
+  window.toast.show('🎲 تم التوليد — احتفظ بالرمز في مكان آمن!','warning',4000);
+}
+
+async function secCopy() {
+  const v=document.getElementById('secE').value;
+  if(!v){window.toast.show('⚠ لا يوجد رمز','warning');return;}
+  try {
+    await navigator.clipboard.writeText(v);
+    const btn=document.getElementById('secCopyBtn');
+    btn.innerHTML='<i class="fa-solid fa-check"></i>'; btn.style.color='var(--success)';
+    setTimeout(()=>{btn.innerHTML='<i class="fa-regular fa-copy"></i>'; btn.style.color='';},2000);
+    window.toast.show('✅ تم نسخ الرمز','success');
+  } catch(_){window.toast.show('❌ فشل النسخ — انسخ يدوياً','error');}
+}
+
+async function secSave() {
+  const q=document.getElementById('secQ').value.trim(), a=document.getElementById('secA').value.trim(), e=document.getElementById('secE').value.trim();
+  if(!q){window.toast.show('⚠ يرجى كتابة سؤال الأمان','warning');document.getElementById('secQ').focus();return;}
+  if(!a){window.toast.show('⚠ يرجى كتابة إجابة السؤال','warning');document.getElementById('secA').focus();return;}
+  try {
+    await window.dbManager.put('settings',{key:'recoveryQuestion',value:q});
+    await window.dbManager.put('settings',{key:'recoveryAnswer',value:await window.passwordManager.hash(a.toLowerCase())});
+    if(e) await window.dbManager.put('settings',{key:'emergencyCode',value:e.replace(/-/g,'')});
+    await window.dbManager.add('logs',{action:'user',userId:currentUser?.id,details:'تحديث إعدادات الأمان',date:window.dateUtils.now()});
+    window.toast.show('✅ تم حفظ إعدادات الأمان','success');
+    await secRefresh();
+  } catch(err){window.toast.show('❌ فشل في الحفظ','error');}
+}
+
+// ============================================================
+//  سجل النشاطات
+// ============================================================
+function filterLogs() {
+  renderLogs();
+}
+
+function renderLogs() {
+  const search = document.getElementById('logSearch').value.toLowerCase();
+  const type = document.getElementById('logType').value;
+  
+  let filtered = allLogs;
+  
+  if (type !== 'all') {
+    filtered = filtered.filter(l => l.action === type);
+  }
+  
+  if (search) {
+    filtered = filtered.filter(l => 
+      (l.details && l.details.toLowerCase().includes(search)) ||
+      (l.username && l.username.toLowerCase().includes(search))
+    );
+  }
+  
+  const tbody = document.getElementById('logsTbody');
+  
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">لا توجد سجلات</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = filtered.slice(0, 200).map(log => {
+    const user = allUsers.find(u => u.id === log.userId);
+    let actionText = '';
+    
+    switch(log.action) {
+      case 'login': actionText = 'تسجيل دخول'; break;
+      case 'sale': actionText = 'بيع'; break;
+      case 'debt': actionText = 'دين'; break;
+      case 'payment': actionText = 'تسديد'; break;
+      case 'user': actionText = 'مستخدم'; break;
+      case 'password_change': actionText = 'تغيير كلمة مرور'; break;
+      default: actionText = log.action;
+    }
+    
+    return `
+      <tr>
+        <td>${window.dateUtils.formatDateTime(log.date)}</td>
+        <td>${user ? window.sanitizer.escape(user.username) : '—'}</td>
+        <td><span class="user-role-badge role-${user?.role || 'seller'}">${actionText}</span></td>
+        <td>${log.details || '—'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ============================================================
+//  تحديث الكل
+// ============================================================
+async function refreshUsers() {
+  await loadAllData();
+  updateStats();
+  renderUsers();
+  window.toast.show('تم تحديث البيانات', 'success');
+}
+
+// ============================================================
+//  تسجيل الخروج
+// ============================================================
+function doLogout() {
+  window.modalManager.confirm('هل تريد تسجيل الخروج؟').then(confirmed => {
+    if (confirmed) {
+      window.sessionManager.logout();
+    }
+  });
+}
+
+// ============================================================
+//  بدء التشغيل
+// ============================================================
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
